@@ -59,22 +59,49 @@
   </div>
 
   <dialog id="addMedicineDialog">
-    <form class="dialog-card medicine-form" id="medicineForm">
+    <form class="dialog-card medicine-form premium-form" id="medicineForm">
       <div class="section-heading"><div><p class="eyebrow">New inventory item</p><h3>Add medicine</h3></div><button type="button" class="icon-button close-button" data-close="addMedicineDialog">×</button></div>
-      <p class="muted">Enter what you can see on the package. Only the medicine name is required.</p>
-      <div class="form-grid">
-        <label class="full">Medicine name<input id="brandName" name="brand_name" required autocomplete="off" placeholder="e.g. Keppra"></label>
-        <label>Strength<input id="strength" name="strength" placeholder="500 mg"></label>
-        <label>Form<select id="dosageForm" name="dosage_form"><option value="Tablet">Tablet</option><option value="Capsule">Capsule</option><option value="Syrup">Syrup</option><option value="Cream">Cream</option><option value="Drops">Drops</option><option value="Injection">Injection</option><option value="Other">Other</option></select></label>
-        <label>Quantity<input id="quantity" name="quantity" type="number" min="0" value="1"></label>
-        <label>Expiry date<input id="expiryDate" name="expiry_date" type="date"></label>
-        <label>Category<select id="category" name="category"><option value="">Select</option><option>Pain relief</option><option>Cold & flu</option><option>Allergy</option><option>Antibiotic</option><option>Anti-seizure</option><option>Digestive</option><option>Vitamins & supplements</option><option>First aid</option><option>Other</option></select></label>
-        <label>Storage location<input id="storageLocation" placeholder="Bedroom cabinet · Shelf 2"></label>
-        <label>Purchase price<input id="purchasePrice" name="purchase_price" type="number" min="0" step="0.01" placeholder="0.00"></label>
-        <label>Store / pharmacy<input id="purchaseStore" name="purchase_store" placeholder="Boots, hospital pharmacy..."></label>
-        <label class="full">Barcode<input id="barcode" name="barcode" inputmode="numeric" placeholder="Optional"></label>
-        <label class="full">Notes<textarea id="notes" name="notes" rows="3" placeholder="Optional notes"></textarea></label>
-      </div>
+      <p class="muted">Add the package details, then enter daily usage to estimate when it will run out.</p>
+
+      <section class="form-section">
+        <div class="form-section-title"><span>1</span><div><strong>Medicine details</strong><small>What is in the cupboard?</small></div></div>
+        <div class="form-grid">
+          <label class="full">Medicine name<input id="brandName" name="brand_name" required autocomplete="off" placeholder="e.g. Keppra"></label>
+          <label>Strength<input id="strength" name="strength" placeholder="500 mg"></label>
+          <label>Form<select id="dosageForm" name="dosage_form"><option value="Tablet">Tablet</option><option value="Capsule">Capsule</option><option value="Syrup">Syrup</option><option value="Cream">Cream</option><option value="Drops">Drops</option><option value="Injection">Injection</option><option value="Other">Other</option></select></label>
+          <label>Quantity<input id="quantity" name="quantity" type="number" min="0" step="0.1" value="1"></label>
+          <label>Expiry date<input id="expiryDate" name="expiry_date" type="date"></label>
+          <label>Category<select id="category" name="category"><option value="">Select</option><option>Pain relief</option><option>Cold & flu</option><option>Allergy</option><option>Antibiotic</option><option>Anti-seizure</option><option>Digestive</option><option>Vitamins & supplements</option><option>First aid</option><option>Other</option></select></label>
+          <label>Storage location<input id="storageLocation" placeholder="Bedroom cabinet · Shelf 2"></label>
+        </div>
+      </section>
+
+      <section class="form-section dosage-section">
+        <div class="form-section-title"><span>2</span><div><strong>Daily usage</strong><small>Used only to estimate stock duration</small></div></div>
+        <div class="dose-grid">
+          <label><span>Morning</span><input id="doseMorning" type="number" min="0" step="0.25" value="0"></label>
+          <label><span>Afternoon</span><input id="doseAfternoon" type="number" min="0" step="0.25" value="0"></label>
+          <label><span>Evening</span><input id="doseEvening" type="number" min="0" step="0.25" value="0"></label>
+          <label><span>Bedtime</span><input id="doseBedtime" type="number" min="0" step="0.25" value="0"></label>
+        </div>
+        <div class="runout-card" id="runoutCard">
+          <div><small>Daily use</small><strong id="dailyDosePreview">0 units</strong></div>
+          <div><small>Days remaining</small><strong id="daysRemainingPreview">—</strong></div>
+          <div class="full"><small>Estimated run-out</small><strong id="runoutDatePreview">Add quantity and dosage</strong></div>
+        </div>
+        <p class="calculation-note">This is an inventory estimate, not medical dosage advice. Follow the prescription or clinician’s instructions.</p>
+      </section>
+
+      <section class="form-section">
+        <div class="form-section-title"><span>3</span><div><strong>Purchase details</strong><small>Optional price history</small></div></div>
+        <div class="form-grid">
+          <label>Purchase price<input id="purchasePrice" name="purchase_price" type="number" min="0" step="0.01" placeholder="0.00"></label>
+          <label>Store / pharmacy<input id="purchaseStore" name="purchase_store" placeholder="Boots, hospital pharmacy..."></label>
+          <label class="full">Barcode<input id="barcode" name="barcode" inputmode="numeric" placeholder="Optional"></label>
+          <label class="full">Notes<textarea id="notes" name="notes" rows="3" placeholder="Optional notes"></textarea></label>
+        </div>
+      </section>
+
       <div class="form-footer"><span id="formCurrencyLabel">Prices saved in THB</span><button class="primary-button" id="saveMedicineBtn" type="submit">Save medicine</button></div>
     </form>
   </dialog>
