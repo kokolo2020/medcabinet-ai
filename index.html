@@ -13,36 +13,26 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Good morning</p>
-        <h1>My MedCabinet</h1>
-      </div>
+      <div><p class="eyebrow">Good morning</p><h1>My MedCabinet</h1></div>
       <button class="icon-button" id="currencyBtn" aria-label="Change home currency">฿</button>
     </header>
 
     <main>
       <section class="score-card">
-        <div>
-          <p class="eyebrow">Cabinet Health Score</p>
-          <h2><span id="scoreValue">82</span><small>/100</small></h2>
-          <p class="score-copy">Great job. Your cabinet is well organized.</p>
-        </div>
+        <div><p class="eyebrow">Cabinet Health Score</p><h2><span id="scoreValue">82</span><small>/100</small></h2><p class="score-copy">Great job. Your cabinet is well organized.</p></div>
         <div class="score-ring" aria-hidden="true"><span>82</span></div>
         <button class="secondary-button" id="shareReportBtn">Share report</button>
       </section>
 
       <section class="metric-grid" aria-label="Cabinet overview">
-        <article class="metric-card"><span class="metric-icon blue">▦</span><strong>64</strong><small>Total medicines</small></article>
-        <article class="metric-card"><span class="metric-icon amber">◷</span><strong>8</strong><small>Expiring soon</small></article>
-        <article class="metric-card"><span class="metric-icon red">!</span><strong>5</strong><small>Expired</small></article>
-        <article class="metric-card"><span class="metric-icon green">↓</span><strong>7</strong><small>Running low</small></article>
+        <article class="metric-card"><span class="metric-icon blue">▦</span><strong id="totalMedicines">0</strong><small>Total medicines</small></article>
+        <article class="metric-card"><span class="metric-icon amber">◷</span><strong id="expiringSoon">0</strong><small>Expiring soon</small></article>
+        <article class="metric-card"><span class="metric-icon red">!</span><strong id="expiredCount">0</strong><small>Expired</small></article>
+        <article class="metric-card"><span class="metric-icon green">↓</span><strong id="lowStock">0</strong><small>Running low</small></article>
       </section>
 
       <section class="panel">
-        <div class="section-heading">
-          <div><p class="eyebrow">Monthly overview</p><h3>Medicine spending</h3></div>
-          <strong id="monthlySpend">฿3,850</strong>
-        </div>
+        <div class="section-heading"><div><p class="eyebrow">Monthly overview</p><h3>Medicine spending</h3></div><strong id="monthlySpend">฿0</strong></div>
         <div class="mini-chart" aria-label="Sample monthly spending chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       </section>
 
@@ -57,64 +47,44 @@
       </section>
 
       <section class="panel">
-        <div class="section-heading"><h3>Needs attention</h3><button class="text-button">See all</button></div>
-        <div class="medicine-row"><div class="medicine-thumb">K</div><div><strong>Keppra 500 mg</strong><small>Bedroom cabinet · Shelf 2</small></div><span class="status green-status">48 tablets</span></div>
-        <div class="medicine-row"><div class="medicine-thumb orange-thumb">P</div><div><strong>Panadol</strong><small>Kitchen cabinet · Drawer</small></div><span class="status amber-status">Expires soon</span></div>
+        <div class="section-heading"><h3>Recently added</h3><button class="text-button" id="refreshBtn">Refresh</button></div>
+        <div id="medicineList"><p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p></div>
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="Primary navigation">
-      <button class="active">⌂<span>Home</span></button>
-      <button>▦<span>Cabinet</span></button>
-      <button class="scan-main" id="mainScanBtn">◎<span>Scan</span></button>
-      <button>🛒<span>Shop</span></button>
-      <button>○<span>Profile</span></button>
+      <button class="active">⌂<span>Home</span></button><button>▦<span>Cabinet</span></button>
+      <button class="scan-main" id="mainScanBtn">◎<span>Scan</span></button><button>🛒<span>Shop</span></button><button>○<span>Profile</span></button>
     </nav>
   </div>
 
-  <dialog id="currencyDialog">
-    <form method="dialog" class="dialog-card">
-      <div class="section-heading"><div><p class="eyebrow">Preferences</p><h3>Home currency</h3></div><button class="icon-button close-button" value="cancel">×</button></div>
-      <p class="muted">Thai Baht is selected by default for testing. You can change it anytime.</p>
-      <label for="currencySelect">Currency</label>
-      <select id="currencySelect">
-        <option value="THB">Thai Baht (THB)</option>
-        <option value="USD">US Dollar (USD)</option>
-        <option value="EUR">Euro (EUR)</option>
-        <option value="GBP">British Pound (GBP)</option>
-        <option value="SGD">Singapore Dollar (SGD)</option>
-        <option value="KHR">Cambodian Riel (KHR)</option>
-        <option value="JPY">Japanese Yen (JPY)</option>
-      </select>
-      <button class="primary-button" id="saveCurrencyBtn" value="default">Save currency</button>
-    </form>
-  </dialog>
-
-  <dialog id="scanDialog">
-    <form method="dialog" class="dialog-card">
-      <div class="section-heading"><div><p class="eyebrow">Smart scan</p><h3>What would you like to do?</h3></div><button class="icon-button close-button" value="cancel">×</button></div>
-      <div class="scan-options">
-        <button value="cancel"><b>＋</b><span>Add a new medicine</span></button>
-        <button value="cancel"><b>▦</b><span>Scan a whole cabinet</span></button>
-        <button value="cancel"><b>✓</b><span>Check before buying</span></button>
-        <button value="cancel"><b>▤</b><span>Scan purchase receipt</span></button>
+  <dialog id="addMedicineDialog">
+    <form class="dialog-card medicine-form" id="medicineForm">
+      <div class="section-heading"><div><p class="eyebrow">New inventory item</p><h3>Add medicine</h3></div><button type="button" class="icon-button close-button" data-close="addMedicineDialog">×</button></div>
+      <p class="muted">Enter what you can see on the package. Only the medicine name is required.</p>
+      <div class="form-grid">
+        <label class="full">Medicine name<input id="brandName" name="brand_name" required autocomplete="off" placeholder="e.g. Keppra"></label>
+        <label>Strength<input id="strength" name="strength" placeholder="500 mg"></label>
+        <label>Form<select id="dosageForm" name="dosage_form"><option value="Tablet">Tablet</option><option value="Capsule">Capsule</option><option value="Syrup">Syrup</option><option value="Cream">Cream</option><option value="Drops">Drops</option><option value="Injection">Injection</option><option value="Other">Other</option></select></label>
+        <label>Quantity<input id="quantity" name="quantity" type="number" min="0" value="1"></label>
+        <label>Expiry date<input id="expiryDate" name="expiry_date" type="date"></label>
+        <label>Category<select id="category" name="category"><option value="">Select</option><option>Pain relief</option><option>Cold & flu</option><option>Allergy</option><option>Antibiotic</option><option>Anti-seizure</option><option>Digestive</option><option>Vitamins & supplements</option><option>First aid</option><option>Other</option></select></label>
+        <label>Storage location<input id="storageLocation" placeholder="Bedroom cabinet · Shelf 2"></label>
+        <label>Purchase price<input id="purchasePrice" name="purchase_price" type="number" min="0" step="0.01" placeholder="0.00"></label>
+        <label>Store / pharmacy<input id="purchaseStore" name="purchase_store" placeholder="Boots, hospital pharmacy..."></label>
+        <label class="full">Barcode<input id="barcode" name="barcode" inputmode="numeric" placeholder="Optional"></label>
+        <label class="full">Notes<textarea id="notes" name="notes" rows="3" placeholder="Optional notes"></textarea></label>
       </div>
+      <div class="form-footer"><span id="formCurrencyLabel">Prices saved in THB</span><button class="primary-button" id="saveMedicineBtn" type="submit">Save medicine</button></div>
     </form>
   </dialog>
 
-  <dialog id="reportDialog">
-    <form method="dialog" class="dialog-card report-card">
-      <button class="icon-button close-button report-close" value="cancel">×</button>
-      <p class="eyebrow">My MedCabinet AI report</p>
-      <h2>Cabinet Score <span>82</span></h2>
-      <p class="report-grade">Excellent organization</p>
-      <div class="report-stats"><div><strong>64</strong><small>Medicines</small></div><div><strong>5</strong><small>Expired</small></div><div><strong>8</strong><small>Expiring</small></div><div><strong id="reportValue">฿18,250</strong><small>Cabinet value</small></div></div>
-      <p class="powered">Powered by MedCabinet AI</p>
-      <button class="primary-button" id="nativeShareBtn" value="cancel">Share this report</button>
-    </form>
-  </dialog>
+  <dialog id="currencyDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Preferences</p><h3>Home currency</h3></div><button class="icon-button close-button" value="cancel">×</button></div><p class="muted">Thai Baht is selected by default for testing.</p><label for="currencySelect">Currency</label><select id="currencySelect"><option value="THB">Thai Baht (THB)</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="GBP">British Pound (GBP)</option><option value="SGD">Singapore Dollar (SGD)</option><option value="KHR">Cambodian Riel (KHR)</option><option value="JPY">Japanese Yen (JPY)</option></select><button class="primary-button" id="saveCurrencyBtn" value="default">Save currency</button></form></dialog>
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <dialog id="scanDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Smart scan</p><h3>What would you like to do?</h3></div><button class="icon-button close-button" value="cancel">×</button></div><div class="scan-options"><button type="button" data-scan-action="add"><b>＋</b><span>Add a new medicine</span></button><button value="cancel"><b>▦</b><span>Scan a whole cabinet</span></button><button value="cancel"><b>✓</b><span>Check before buying</span></button><button value="cancel"><b>▤</b><span>Scan purchase receipt</span></button></div></form></dialog>
+
+  <dialog id="reportDialog"><form method="dialog" class="dialog-card report-card"><button class="icon-button close-button report-close" value="cancel">×</button><p class="eyebrow">My MedCabinet AI report</p><h2>Cabinet Score <span>82</span></h2><p class="report-grade">Excellent organization</p><div class="report-stats"><div><strong id="reportMedicineCount">0</strong><small>Medicines</small></div><div><strong id="reportExpiredCount">0</strong><small>Expired</small></div><div><strong id="reportExpiringCount">0</strong><small>Expiring</small></div><div><strong id="reportValue">฿0</strong><small>Cabinet value</small></div></div><p class="powered">Powered by MedCabinet AI</p><button class="primary-button" id="nativeShareBtn" value="cancel">Share this report</button></form></dialog>
+
+  <script src="config.js"></script><script src="app.js"></script>
 </body>
 </html>
