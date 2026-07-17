@@ -291,6 +291,28 @@ async function handlePhotoSelected(e){
  }finally{scanInProgress=false}
 }
 
+let expiryScanInProgress=false;
+
+async function handleExpiryPhotoSelected(e){
+ const file=e.target.files[0];
+ e.target.value='';
+ if(!file||expiryScanInProgress)return;
+ expiryScanInProgress=true;
+ showToast('Reading expiry date…');
+ try{
+  const dataUrl=await fileToDataUrl(file);
+  const base64=dataUrl.split(',')[1];
+  const r=await fetch('/.netlify/functions/scan-medicine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:base64,mediaType:file.type||'image/jpeg'})});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||`Scan failed (${r.status})`);
+  if(data.expiry_date){$('expiryDate').value=data.expiry_date;showToast('Expiry date filled in')}
+  else showToast("Couldn't find a date in that photo");
+ }catch(err){
+  console.error(err);
+  showToast(err.message||'Could not read expiry date');
+ }finally{expiryScanInProgress=false}
+}
+
 async function uploadPhoto(file){
  const path=`${crypto.randomUUID()}-${(file.name||'photo.jpg').replace(/[^a-zA-Z0-9.]/g,'_')}`;
  const {error}=await sb.storage.from('medicine-photos').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
@@ -394,6 +416,8 @@ $('storageOnly').addEventListener('change',toggleDosageFields);
 toggleDosageFields();
 $('photoInputCamera').addEventListener('change',handlePhotoSelected);
 $('photoInputGallery').addEventListener('change',handlePhotoSelected);
+$('photoInputExpiry').addEventListener('change',handleExpiryPhotoSelected);
+$('scanExpiryBtn').addEventListener('click',()=>$('photoInputExpiry').click());
 $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());
 $('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
