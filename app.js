@@ -103,7 +103,7 @@ async function saveMedicine(e){
   const {error}=await sb.from('medicines').insert(payload);
   if(error)throw new Error(error.message||error.hint||'Save failed');
   $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
- }catch(e){console.error(e);showToast(e.message)}finally{btn.disabled=false;btn.textContent='Save medicine'}
+ }catch(e){console.error('SAVE ERROR:',e);showToast(e.message||'Save failed');alert('Save failed:\n\n'+(e&&e.message?e.message:JSON.stringify(e)))}finally{btn.disabled=false;btn.textContent='Save medicine'}
 }
 
 setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;applyCurrency(saved);
