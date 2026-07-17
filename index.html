@@ -62,6 +62,13 @@
     <form class="dialog-card medicine-form" id="medicineForm">
       <div class="section-heading"><div><p class="eyebrow">New inventory item</p><h3>Add medicine</h3></div><button type="button" class="icon-button close-button" data-close="addMedicineDialog">×</button></div>
       <p class="muted">Enter what you can see on the package. Only the medicine name is required.</p>
+      <div class="photo-capture-row">
+        <div class="photo-preview" id="photoPreviewWrap" hidden>
+          <img id="photoPreview" alt="Medicine photo">
+          <button type="button" class="icon-button close-button" id="retakePhotoBtn" aria-label="Retake photo">↻</button>
+        </div>
+        <button type="button" class="scan-photo-btn" id="scanPhotoBtn"><span>📷</span>Scan photo to auto-fill</button>
+      </div>
       <div class="form-grid">
         <label class="full">Medicine name<input id="brandName" name="brand_name" required autocomplete="off" placeholder="e.g. Keppra"></label>
         <label>Strength<input id="strength" name="strength" placeholder="500 mg"></label>
@@ -84,6 +91,8 @@
   <dialog id="scanDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Smart scan</p><h3>What would you like to do?</h3></div><button class="icon-button close-button" value="cancel">×</button></div><div class="scan-options"><button type="button" data-scan-action="add"><b>＋</b><span>Add a new medicine</span></button><button value="cancel"><b>▦</b><span>Scan a whole cabinet</span></button><button value="cancel"><b>✓</b><span>Check before buying</span></button><button value="cancel"><b>▤</b><span>Scan purchase receipt</span></button></div></form></dialog>
 
   <dialog id="reportDialog"><form method="dialog" class="dialog-card report-card"><button class="icon-button close-button report-close" value="cancel">×</button><p class="eyebrow">My MedCabinet AI report</p><h2>Cabinet Score <span>82</span></h2><p class="report-grade">Excellent organization</p><div class="report-stats"><div><strong id="reportMedicineCount">0</strong><small>Medicines</small></div><div><strong id="reportExpiredCount">0</strong><small>Expired</small></div><div><strong id="reportExpiringCount">0</strong><small>Expiring</small></div><div><strong id="reportValue">฿0</strong><small>Cabinet value</small></div></div><p class="powered">Powered by MedCabinet AI</p><button class="primary-button" id="nativeShareBtn" value="cancel">Share this report</button></form></dialog>
+
+  <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script><script src="app.js"></script>

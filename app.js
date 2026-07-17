@@ -1,6 +1,7 @@
 const symbols={THB:'฿',USD:'$',EUR:'€',GBP:'£',SGD:'S$',KHR:'៛',JPY:'¥'};
 const cfg=window.MEDCABINET_CONFIG;
 const apiUrl=`${cfg.supabaseUrl}/rest/v1/medicines`;
+const storageUrl=`${cfg.supabaseUrl}/storage/v1/object`;
 const headers={apikey:cfg.supabaseKey,Authorization:`Bearer ${cfg.supabaseKey}`,'Content-Type':'application/json'};
 const $=id=>document.getElementById(id);
 const toast=document.createElement('div');toast.className='toast';document.body.appendChild(toast);
@@ -12,6 +13,56 @@ function openAdd(){if($('scanDialog').open)$('scanDialog').close();$('addMedicin
 function closeDialog(id){const d=$(id);if(d?.open)d.close()}
 function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function expiryStatus(date){if(!date)return'';const days=Math.ceil((new Date(date+'T00:00:00')-new Date())/86400000);if(days<0)return'Expired';if(days<=90)return'Expires soon';return''}
+
+let pendingPhotoFile=null;
+let scanInProgress=false;
+
+function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=true;$('photoPreview').src='';$('scanPhotoBtn').hidden=false}
+function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreviewWrap').hidden=false;$('scanPhotoBtn').hidden=true}
+function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+
+function fillFormFromScan(d={}){
+ $('brandName').value=d.brand_name||'';
+ $('strength').value=d.strength||'';
+ if(d.dosage_form&&[...$('dosageForm').options].some(o=>o.value===d.dosage_form))$('dosageForm').value=d.dosage_form;
+ if(d.category&&[...$('category').options].some(o=>o.value===d.category))$('category').value=d.category;
+ $('expiryDate').value=d.expiry_date||'';
+ $('barcode').value=d.barcode||'';
+}
+
+async function handlePhotoSelected(e){
+ const file=e.target.files[0];
+ e.target.value='';
+ if(!file||scanInProgress)return;
+ scanInProgress=true;
+ pendingPhotoFile=file;
+ showToast('Scanning photo…');
+ try{
+  const dataUrl=await fileToDataUrl(file);
+  const base64=dataUrl.split(',')[1];
+  const r=await fetch('/.netlify/functions/scan-medicine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:base64,mediaType:file.type||'image/jpeg'})});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||`Scan failed (${r.status})`);
+  openAdd();
+  fillFormFromScan(data);
+  showPhotoPreview(dataUrl);
+  showToast('Scanned — check the details and save');
+ }catch(err){
+  console.error(err);
+  pendingPhotoFile=file;
+  openAdd();
+  try{showPhotoPreview(await fileToDataUrl(file))}catch{}
+  showToast(err.message||'Could not auto-scan, fill in manually');
+ }finally{scanInProgress=false}
+}
+
+async function uploadPhoto(file){
+ const path=`${crypto.randomUUID()}-${(file.name||'photo.jpg').replace(/[^a-zA-Z0-9.]/g,'_')}`;
+ const r=await fetch(`${storageUrl}/medicine-photos/${path}`,{method:'POST',headers:{apikey:cfg.supabaseKey,Authorization:`Bearer ${cfg.supabaseKey}`,'Content-Type':file.type||'image/jpeg'},body:file});
+ if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.message||'Photo upload failed')}
+ return `${cfg.supabaseUrl}/storage/v1/object/public/medicine-photos/${path}`;
+}
+
 async function loadMedicines(){
  try{
   const r=await fetch(`${apiUrl}?select=*&order=created_at.desc&limit=20`,{headers});
@@ -23,28 +74,39 @@ async function loadMedicines(){
   $('expiredCount').textContent=expired;$('expiringSoon').textContent=soon;$('lowStock').textContent=low;
   const code=currentCurrency(),sym=symbols[code]||code+' ';$('monthlySpend').textContent=`${sym}${total.toLocaleString()}`;$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
   $('reportMedicineCount').textContent=items.length;$('reportExpiredCount').textContent=expired;$('reportExpiringCount').textContent=soon;
-  $('medicineList').innerHTML=items.length?items.map(m=>`<div class="medicine-row"><div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div><div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${esc(m.category||m.dosage_form||'Medicine')} · ${m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date'}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span></div>`).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
+  $('medicineList').innerHTML=items.length?items.map(m=>{
+   const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
+   return `<div class="medicine-row">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${esc(m.category||m.dosage_form||'Medicine')} · ${m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date'}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span></div>`;
+  }).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
  }catch(e){console.error(e);showToast(e.message)}
 }
+
 async function saveMedicine(e){
  e.preventDefault();
  const btn=$('saveMedicineBtn');btn.disabled=true;btn.textContent='Saving…';
  const location=$('storageLocation').value.trim();const notes=$('notes').value.trim();
- const payload={brand_name:$('brandName').value.trim(),strength:$('strength').value.trim()||null,dosage_form:$('dosageForm').value||null,quantity:Number($('quantity').value||0),expiry_date:$('expiryDate').value||null,category:$('category').value||null,purchase_price:$('purchasePrice').value?Number($('purchasePrice').value):null,currency:currentCurrency(),purchase_store:$('purchaseStore').value.trim()||null,barcode:$('barcode').value.trim()||null,notes:[notes,location?`Location: ${location}`:''].filter(Boolean).join('\n')||null};
  try{
+  let photo_url=null;
+  if(pendingPhotoFile){btn.textContent='Uploading photo…';photo_url=await uploadPhoto(pendingPhotoFile)}
+  const payload={brand_name:$('brandName').value.trim(),strength:$('strength').value.trim()||null,dosage_form:$('dosageForm').value||null,quantity:Number($('quantity').value||0),expiry_date:$('expiryDate').value||null,category:$('category').value||null,purchase_price:$('purchasePrice').value?Number($('purchasePrice').value):null,currency:currentCurrency(),purchase_store:$('purchaseStore').value.trim()||null,barcode:$('barcode').value.trim()||null,photo_url,notes:[notes,location?`Location: ${location}`:''].filter(Boolean).join('\n')||null};
+  btn.textContent='Saving…';
   const r=await fetch(apiUrl,{method:'POST',headers:{...headers,Prefer:'return=representation'},body:JSON.stringify(payload)});
   if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.message||x.hint||`Save failed (${r.status})`)}
-  $('medicineForm').reset();$('quantity').value=1;closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
+  $('medicineForm').reset();$('quantity').value=1;resetPhotoPreview();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
  }catch(e){console.error(e);showToast(e.message)}finally{btn.disabled=false;btn.textContent='Save medicine'}
 }
+
 setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;applyCurrency(saved);
 $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
-document.querySelector('[data-action="add"]').addEventListener('click',openAdd);
-document.querySelector('[data-scan-action="add"]').addEventListener('click',openAdd);
+document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();$('quantity').value=1;resetPhotoPreview();openAdd()});
+document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInput').click());
 document.querySelectorAll('[data-action]:not([data-action="add"])').forEach(b=>b.addEventListener('click',()=>$('scanDialog').showModal()));
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeDialog(b.dataset.close)));
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{closeDialog(b.dataset.close);if(b.dataset.close==='addMedicineDialog'){$('medicineForm').reset();$('quantity').value=1;resetPhotoPreview()}}));
+$('photoInput').addEventListener('change',handlePhotoSelected);
+$('scanPhotoBtn').addEventListener('click',()=>$('photoInput').click());
+$('retakePhotoBtn').addEventListener('click',()=>$('photoInput').click());
 $('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEventListener('click',loadMedicines);
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
