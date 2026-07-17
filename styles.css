@@ -207,10 +207,28 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 
 .splash-screen{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 70% at 20% -10%,#eef7f1 0%,var(--paper) 45%,var(--paper) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;text-align:center;transition:opacity .5s ease,visibility .5s ease}
 .splash-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
-.splash-icon{width:100px;height:100px;border-radius:32px;background:linear-gradient(150deg,var(--mint),var(--emerald));display:grid;place-items:center;font-size:2.8rem;box-shadow:0 16px 34px rgba(31,111,92,.28);margin-bottom:26px}
+.splash-icon-wrap{position:relative;width:128px;height:118px;margin-bottom:30px}
+.splash-cabinet{position:absolute;bottom:0;left:0;right:0;height:92px;background:linear-gradient(160deg,#ffffff,#f4f1e8);border-radius:30px;box-shadow:0 18px 36px rgba(18,70,59,.2),inset 0 0 0 1px rgba(18,70,59,.06);display:flex;align-items:center;justify-content:center}
+.splash-cross{position:relative;width:36px;height:36px}
+.splash-cross:before,.splash-cross:after{content:"";position:absolute;background:linear-gradient(160deg,var(--mint),var(--emerald));border-radius:7px}
+.splash-cross:before{left:50%;top:0;bottom:0;width:11px;transform:translateX(-50%)}
+.splash-cross:after{top:50%;left:0;right:0;height:11px;transform:translateY(-50%)}
+.splash-bottles{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:7px;z-index:2}
+.sb{width:22px;height:32px;border-radius:7px 7px 4px 4px;position:relative;box-shadow:0 6px 14px rgba(18,70,59,.18)}
+.sb:before{content:"";position:absolute;top:-7px;left:2px;right:2px;height:9px;background:#fff;border-radius:4px 4px 0 0;box-shadow:0 -1px 0 rgba(18,70,59,.08)}
+.sb-1{background:linear-gradient(160deg,#f3873a,var(--orange));transform:rotate(-9deg) translateY(3px)}
+.sb-2{background:linear-gradient(160deg,#3f8fe0,var(--sky));height:36px}
+.sb-3{background:linear-gradient(160deg,var(--mint),var(--emerald));transform:rotate(9deg) translateY(3px)}
 .splash-title{font-family:Fraunces,serif;font-weight:600;font-size:2rem;color:var(--pine);letter-spacing:-.02em;margin-bottom:10px}
 .splash-title span{color:var(--emerald)}
 .splash-tagline{color:var(--muted);font-size:1rem;margin-bottom:38px;max-width:280px}
 .splash-benefits{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:16px;text-align:left}
 .splash-benefits li{display:flex;align-items:center;gap:14px;font-weight:650;color:var(--ink);font-size:.95rem}
 .splash-benefit-icon{width:34px;height:34px;border-radius:11px;background:var(--mint-soft);display:grid;place-items:center;font-size:1.05rem;flex-shrink:0}
+
+.splash-decor{display:flex;align-items:flex-end;justify-content:center;gap:16px;margin-top:38px;opacity:.85}
+.decor-bottle{width:28px;height:42px;background:linear-gradient(160deg,#f3873a,var(--orange));border-radius:7px 7px 4px 4px;position:relative;box-shadow:0 6px 14px rgba(232,98,10,.2)}
+.decor-bottle:before{content:"";position:absolute;top:-8px;left:3px;right:3px;height:10px;background:#fff;border-radius:4px 4px 0 0}
+.decor-blister{width:48px;height:26px;background:#fff;border:1px solid var(--line);border-radius:7px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;align-self:center;box-shadow:0 4px 10px rgba(18,70,59,.08)}
+.decor-blister span{background:var(--mint-soft);border-radius:50%}
+.decor-plant{font-size:2.1rem;line-height:1}
