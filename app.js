@@ -143,7 +143,8 @@ function renderWasteList(){
  $('wasteList').innerHTML=rows.length?rows.map(r=>{
   const priceText=r.purchase_price?`${sym}${Number(r.purchase_price).toLocaleString()}${r.price_estimated?' (estimated)':''}`:'No price recorded';
   const deletedDate=(r.deleted_at||'').slice(0,10);
-  return `<div class="medicine-row"><div class="medicine-thumb">${esc((r.brand_name||'?')[0].toUpperCase())}</div><div><strong>${esc(r.brand_name||'Unnamed medicine')}</strong><small>${esc(priceText)} · deleted ${esc(deletedDate)}${r.was_expired?' · was expired':''}</small></div><span></span></div>`;
+  const thumb=r.photo_url?`<img class="medicine-thumb-img" src="${esc(r.photo_url)}" alt="${esc(r.brand_name||'')}">`:`<div class="medicine-thumb">${esc((r.brand_name||'?')[0].toUpperCase())}</div>`;
+  return `<div class="medicine-row"><div class="row-main">${thumb}<div class="row-text"><strong>${esc(r.brand_name||'Unnamed medicine')}</strong><small>${esc(priceText)} · deleted ${esc(deletedDate)}${r.was_expired?' · was expired':''}</small></div></div></div>`;
  }).join(''):(wasteRows.length?'<p class="empty-state">No matches.</p>':'<p class="empty-state">Nothing deleted yet.</p>');
 }
 
@@ -361,7 +362,7 @@ async function deleteMedicine(id){
   const m=currentItems.find(i=>i.id===id)||expiredItems.find(i=>i.id===id);
   if(m){
    const wasExpired=!!(m.expiry_date&&new Date(m.expiry_date+'T00:00:00')<new Date());
-   const {error:logErr}=await sb.from('deleted_medicines').insert({medicine_id:m.id,brand_name:m.brand_name,category:m.category,quantity:m.quantity,purchase_price:m.purchase_price,price_estimated:m.price_estimated||false,currency:m.currency,expiry_date:m.expiry_date,was_expired:wasExpired});
+   const {error:logErr}=await sb.from('deleted_medicines').insert({medicine_id:m.id,brand_name:m.brand_name,category:m.category,quantity:m.quantity,purchase_price:m.purchase_price,price_estimated:m.price_estimated||false,currency:m.currency,expiry_date:m.expiry_date,was_expired:wasExpired,photo_url:m.photo_url||null,notes:m.notes||null});
    if(logErr)console.error('waste log failed',logErr);
   }
   const {error}=await sb.from('medicines').delete().eq('id',id);

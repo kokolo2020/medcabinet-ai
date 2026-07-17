@@ -124,3 +124,9 @@ create policy "public read" on public.deleted_medicines for select using (true);
 create policy "public insert" on public.deleted_medicines for insert with check (true);
 
 notify pgrst, 'reload schema';
+
+-- Keep the photo and notes in the deleted-medicines archive.
+alter table public.deleted_medicines add column if not exists photo_url text;
+alter table public.deleted_medicines add column if not exists notes text;
+
+notify pgrst, 'reload schema';
