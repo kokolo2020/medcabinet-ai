@@ -22,12 +22,6 @@
     </header>
 
     <main>
-      <section class="score-card">
-        <div><p class="eyebrow">Cabinet Health Score</p><h2><span id="scoreValue">82</span><small>/100</small></h2><p class="score-copy">Great job. Your cabinet is well organized.</p></div>
-        <div class="score-ring" aria-hidden="true"><span>82</span></div>
-        <button class="secondary-button" id="shareReportBtn">Share report</button>
-      </section>
-
       <section class="metric-grid" aria-label="Cabinet overview">
         <article class="metric-card"><span class="metric-icon blue">▦</span><strong id="totalMedicines">0</strong><small>Total medicines</small></article>
         <button type="button" class="metric-card metric-card-btn" id="expiringSoonCard"><span class="metric-icon amber">◷</span><strong id="expiringSoon">0</strong><small>Expiring soon</small></button>
@@ -54,7 +48,7 @@
 
     <nav class="bottom-nav" aria-label="Primary navigation">
       <button class="active" id="navHome">⌂<span>Home</span></button><button id="navCabinet">▦<span>Cabinet</span></button>
-      <button class="scan-main" id="mainScanBtn">◎<span>Scan</span></button><button>🛒<span>Shop</span></button><button>○<span>Profile</span></button>
+      <button class="scan-main" id="mainScanBtn">◎<span>Scan</span></button><button>🛒<span>Shop</span></button><button id="navProfile">○<span>Profile</span></button>
     </nav>
   </div>
 
@@ -98,6 +92,17 @@
   <dialog id="currencyDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Preferences</p><h3>Home currency</h3></div><button class="icon-button close-button" value="cancel">×</button></div><p class="muted">Thai Baht is selected by default for testing.</p><label for="currencySelect">Currency</label><select id="currencySelect"><option value="THB">Thai Baht (THB)</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="GBP">British Pound (GBP)</option><option value="SGD">Singapore Dollar (SGD)</option><option value="KHR">Cambodian Riel (KHR)</option><option value="JPY">Japanese Yen (JPY)</option></select><button class="primary-button" id="saveCurrencyBtn" value="default">Save currency</button></form></dialog>
 
   <dialog id="scanDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Smart scan</p><h3>What would you like to do?</h3></div><button class="icon-button close-button" value="cancel">×</button></div><div class="scan-options"><button type="button" data-scan-action="add"><b>＋</b><span>Add a new medicine</span></button><button value="cancel"><b>▦</b><span>Scan a whole cabinet</span></button><button value="cancel"><b>✓</b><span>Check before buying</span></button><button value="cancel"><b>▤</b><span>Scan purchase receipt</span></button></div></form></dialog>
+
+  <dialog id="profileDialog">
+    <div class="dialog-card">
+      <div class="section-heading"><div><p class="eyebrow">You</p><h3>Profile</h3></div><button type="button" class="icon-button close-button" data-close="profileDialog">×</button></div>
+      <div class="score-card score-card-inline">
+        <div><p class="eyebrow">Cabinet Health Score</p><h2><span id="scoreValue">82</span><small>/100</small></h2><p class="score-copy">Great job. Your cabinet is well organized.</p></div>
+        <div class="score-ring" aria-hidden="true"><span>82</span></div>
+      </div>
+      <button class="secondary-button" id="shareReportBtn">Share report</button>
+    </div>
+  </dialog>
 
   <dialog id="wasteDialog">
     <div class="dialog-card">
