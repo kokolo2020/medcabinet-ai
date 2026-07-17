@@ -1,8 +1,6 @@
 const symbols={THB:'฿',USD:'$',EUR:'€',GBP:'£',SGD:'S$',KHR:'៛',JPY:'¥'};
 const cfg=window.MEDCABINET_CONFIG;
-const apiUrl=`${cfg.supabaseUrl}/rest/v1/medicines`;
-const storageUrl=`${cfg.supabaseUrl}/storage/v1/object`;
-const headers={apikey:cfg.supabaseKey,Authorization:`Bearer ${cfg.supabaseKey}`,'Content-Type':'application/json'};
+const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
 const $=id=>document.getElementById(id);
 const toast=document.createElement('div');toast.className='toast';document.body.appendChild(toast);
 function showToast(message){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2500)}
@@ -59,16 +57,16 @@ async function handlePhotoSelected(e){
 
 async function uploadPhoto(file){
  const path=`${crypto.randomUUID()}-${(file.name||'photo.jpg').replace(/[^a-zA-Z0-9.]/g,'_')}`;
- const r=await fetch(`${storageUrl}/medicine-photos/${path}`,{method:'POST',headers:{apikey:cfg.supabaseKey,Authorization:`Bearer ${cfg.supabaseKey}`,'Content-Type':file.type||'image/jpeg'},body:file});
- if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.message||'Photo upload failed')}
- return `${cfg.supabaseUrl}/storage/v1/object/public/medicine-photos/${path}`;
+ const {error}=await sb.storage.from('medicine-photos').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+ if(error)throw new Error(error.message||'Photo upload failed');
+ const {data}=sb.storage.from('medicine-photos').getPublicUrl(path);
+ return data.publicUrl;
 }
 
 async function loadMedicines(){
  try{
-  const r=await fetch(`${apiUrl}?select=*&order=created_at.desc&limit=20`,{headers});
-  if(!r.ok)throw new Error((await r.json()).message||`Load failed (${r.status})`);
-  const items=await r.json();
+  const {data:items,error}=await sb.from('medicines').select('*').order('created_at',{ascending:false}).limit(20);
+  if(error)throw new Error(error.message||'Load failed');
   $('totalMedicines').textContent=items.length;
   const today=new Date();let expired=0,soon=0,low=0,total=0;
   items.forEach(m=>{if(m.expiry_date){const d=(new Date(m.expiry_date+'T00:00:00')-today)/86400000;if(d<0)expired++;else if(d<=90)soon++;}if((m.quantity||0)<=5)low++;total+=Number(m.purchase_price||0)});
@@ -85,8 +83,8 @@ async function loadMedicines(){
 async function deleteMedicine(id){
  if(!confirm('Delete this medicine?'))return;
  try{
-  const r=await fetch(`${apiUrl}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers});
-  if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.message||`Delete failed (${r.status})`)}
+  const {error}=await sb.from('medicines').delete().eq('id',id);
+  if(error)throw new Error(error.message||'Delete failed');
   showToast('Medicine deleted');
   await loadMedicines();
  }catch(e){console.error(e);showToast(e.message)}
@@ -102,8 +100,8 @@ async function saveMedicine(e){
   const boxes=Number($('boxes').value||0),qtyPerBox=Number($('qtyPerBox').value||0);
   const payload={brand_name:$('brandName').value.trim(),manufacturer:$('manufacturer').value.trim()||null,strength:$('strength').value.trim()||null,dosage_form:$('dosageForm').value||null,quantity:boxes*qtyPerBox,expiry_date:$('expiryDate').value||null,category:$('category').value||null,purchase_price:$('purchasePrice').value?Number($('purchasePrice').value):null,currency:currentCurrency(),purchase_store:$('purchaseStore').value.trim()||null,barcode:$('barcode').value.trim()||null,photo_url,notes:[notes,location?`Location: ${location}`:''].filter(Boolean).join('\n')||null};
   btn.textContent='Saving…';
-  const r=await fetch(apiUrl,{method:'POST',headers:{...headers,Prefer:'return=representation'},body:JSON.stringify(payload)});
-  if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.message||x.hint||`Save failed (${r.status})`)}
+  const {error}=await sb.from('medicines').insert(payload);
+  if(error)throw new Error(error.message||error.hint||'Save failed');
   $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
  }catch(e){console.error(e);showToast(e.message)}finally{btn.disabled=false;btn.textContent='Save medicine'}
 }
