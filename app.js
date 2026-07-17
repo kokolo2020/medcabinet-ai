@@ -53,11 +53,27 @@ function renderMedicineList(){
  $('medicinePagination').innerHTML=totalPages>1?Array.from({length:totalPages},(_,i)=>i+1).map(p=>`<button type="button" class="page-btn ${p===homePage?'active':''}" data-page="${p}">${p}</button>`).join(''):'';
 }
 
+let cabinetActiveCategory='';
+const CATEGORY_ICONS={'Pain relief':'💊','Cold & flu':'🤧','Allergy':'🌼','Antibiotic':'🧫','Anti-seizure':'⚡','Digestive':'🍽️','Vitamins & supplements':'🌿','First aid':'🩹','Other':'📦',Uncategorized:'❔'};
+
 function renderCabinetList(){
  const favIds=favoriteMedicineIds();
- const filter=$('cabinetCategoryFilter').value;
- const list=filter?currentItems.filter(m=>m.category===filter):currentItems;
- $('cabinetList').innerHTML=list.length?list.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">No medicines in this category.</p>';
+ const allCats=[...new Set(currentItems.map(m=>m.category||'Uncategorized'))].sort((a,b)=>a.localeCompare(b));
+ $('cabinetChips').innerHTML=[`<button type="button" class="chip ${!cabinetActiveCategory?'active':''}" data-cat="">All<span>${currentItems.length}</span></button>`]
+  .concat(allCats.map(c=>`<button type="button" class="chip ${cabinetActiveCategory===c?'active':''}" data-cat="${esc(c)}">${esc(c)}<span>${currentItems.filter(m=>(m.category||'Uncategorized')===c).length}</span></button>`))
+  .join('');
+ const groups={};
+ currentItems.forEach(m=>{
+  const cat=m.category||'Uncategorized';
+  if(cabinetActiveCategory&&cat!==cabinetActiveCategory)return;
+  (groups[cat]=groups[cat]||[]).push(m);
+ });
+ const catNames=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+ $('cabinetList').innerHTML=catNames.length?catNames.map(cat=>{
+  const items=groups[cat];
+  const icon=CATEGORY_ICONS[cat]||'💊';
+  return `<details class="category-group" open><summary class="category-group-header"><span class="category-group-title">${icon} ${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="category-group-items">${items.map(m=>medicineRowHtml(m,favIds)).join('')}</div></details>`;
+ }).join(''):'<p class="empty-state">No medicines in this category.</p>';
 }
 
 function renderExpiredList(){
@@ -294,8 +310,8 @@ setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;appl
 $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
 $('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smooth'})});
-$('navCabinet').addEventListener('click',()=>{$('cabinetCategoryFilter').value='';renderCabinetList();$('cabinetDialog').showModal()});
-$('cabinetCategoryFilter').addEventListener('change',renderCabinetList);
+$('navCabinet').addEventListener('click',()=>{cabinetActiveCategory='';renderCabinetList();$('cabinetDialog').showModal()});
+$('cabinetChips').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cabinetActiveCategory=b.dataset.cat;renderCabinetList()});
 $('medicinePagination').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b){homePage=Number(b.dataset.page);renderMedicineList();$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'})}});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
 document.querySelector('[data-action="add"]').addEventListener('click',()=>{resetEditState();$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
