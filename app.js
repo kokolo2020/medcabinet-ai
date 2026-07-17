@@ -24,6 +24,7 @@ function estimateRunOutDate(m){
 let pendingPhotoFile=null;
 let scanInProgress=false;
 let expiredItems=[];
+let expiringSoonItems=[];
 let currentItems=[];
 let favoriteRows=[];
 let homePage=1;
@@ -81,6 +82,11 @@ function renderExpiredList(){
  $('expiredList').innerHTML=expiredItems.length?expiredItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">Nothing expired. Nice.</p>';
 }
 
+function renderExpiringSoonList(){
+ const favIds=favoriteMedicineIds();
+ $('expiringSoonList').innerHTML=expiringSoonItems.length?expiringSoonItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">Nothing expiring soon.</p>';
+}
+
 function renderFavoritesList(){
  $('favoritesList').innerHTML=favoriteRows.length?favoriteRows.map(f=>{
   const thumb=f.photo_url?`<img class="medicine-thumb-img" src="${esc(f.photo_url)}" alt="${esc(f.brand_name||'')}">`:`<div class="medicine-thumb">${esc((f.brand_name||'?')[0].toUpperCase())}</div>`;
@@ -94,20 +100,29 @@ async function loadFavorites(){
  favoriteRows=data||[];
 }
 
+let wasteRows=[];
+
 async function renderWasteDialog(){
  const {data,error}=await sb.from('deleted_medicines').select('*').order('deleted_at',{ascending:false});
  if(error){console.error(error);showToast(error.message);return}
- const rows=data||[];
+ wasteRows=data||[];
  const sym=symbols[currentCurrency()]||currentCurrency()+' ';
  const byYear={};
- rows.forEach(r=>{const y=new Date(r.deleted_at).getFullYear();byYear[y]=(byYear[y]||0)+Number(r.purchase_price||0)});
+ wasteRows.forEach(r=>{const y=new Date(r.deleted_at).getFullYear();byYear[y]=(byYear[y]||0)+Number(r.purchase_price||0)});
  const years=Object.keys(byYear).sort((a,b)=>b-a);
  $('wasteSummary').innerHTML=years.length?years.map(y=>`<div class="waste-year-row"><strong>${y}</strong><span>${sym}${byYear[y].toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>`).join(''):'';
+ renderWasteList();
+}
+
+function renderWasteList(){
+ const sym=symbols[currentCurrency()]||currentCurrency()+' ';
+ const q=$('wasteSearch').value.trim().toLowerCase();
+ const rows=q?wasteRows.filter(r=>(r.brand_name||'').toLowerCase().includes(q)||(r.category||'').toLowerCase().includes(q)):wasteRows;
  $('wasteList').innerHTML=rows.length?rows.map(r=>{
   const priceText=r.purchase_price?`${sym}${Number(r.purchase_price).toLocaleString()}${r.price_estimated?' (estimated)':''}`:'No price recorded';
   const deletedDate=(r.deleted_at||'').slice(0,10);
   return `<div class="medicine-row"><div class="medicine-thumb">${esc((r.brand_name||'?')[0].toUpperCase())}</div><div><strong>${esc(r.brand_name||'Unnamed medicine')}</strong><small>${esc(priceText)} · deleted ${esc(deletedDate)}${r.was_expired?' · was expired':''}</small></div><span></span></div>`;
- }).join(''):'<p class="empty-state">Nothing deleted yet.</p>';
+ }).join(''):(wasteRows.length?'<p class="empty-state">No matches.</p>':'<p class="empty-state">Nothing deleted yet.</p>');
 }
 
 async function toggleFavorite(medicineId){
@@ -127,6 +142,7 @@ async function toggleFavorite(medicineId){
   await loadFavorites();
   renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
+  if($('expiringSoonDialog').open)renderExpiringSoonList();
   if($('favoritesDialog').open)renderFavoritesList();
   if($('cabinetDialog').open)renderCabinetList();
  }catch(e){console.error(e);showToast(e.message)}
@@ -140,6 +156,7 @@ async function removeFavorite(favId){
   renderFavoritesList();
   renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
+  if($('expiringSoonDialog').open)renderExpiringSoonList();
   if($('cabinetDialog').open)renderCabinetList();
  }catch(e){console.error(e);showToast(e.message)}
 }
@@ -240,12 +257,14 @@ async function loadMedicines(){
   $('totalMedicines').textContent=items.length;
   const today=new Date();let expired=0,soon=0,low=0,total=0;
   expiredItems=[];
-  items.forEach(m=>{if(m.expiry_date){const d=(new Date(m.expiry_date+'T00:00:00')-today)/86400000;if(d<0){expired++;expiredItems.push(m)}else if(d<=90)soon++;}if((m.quantity||0)<=5)low++;total+=Number(m.purchase_price||0)});
+  expiringSoonItems=[];
+  items.forEach(m=>{if(m.expiry_date){const d=(new Date(m.expiry_date+'T00:00:00')-today)/86400000;if(d<0){expired++;expiredItems.push(m)}else if(d<=90){soon++;expiringSoonItems.push(m)}}if((m.quantity||0)<=5)low++;total+=Number(m.purchase_price||0)});
   $('expiredCount').textContent=expired;$('expiringSoon').textContent=soon;$('lowStock').textContent=low;
   const code=currentCurrency(),sym=symbols[code]||code+' ';$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
   $('reportMedicineCount').textContent=items.length;$('reportExpiredCount').textContent=expired;$('reportExpiringCount').textContent=soon;
   renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
+  if($('expiringSoonDialog').open)renderExpiringSoonList();
   if($('favoritesDialog').open)renderFavoritesList();
   if($('cabinetDialog').open)renderCabinetList();
  }catch(e){console.error(e);showToast(e.message)}
@@ -331,6 +350,12 @@ $('medicineList').addEventListener('click',e=>{
  const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
  const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
 });
+$('expiringSoonCard').addEventListener('click',()=>{renderExpiringSoonList();$('expiringSoonDialog').showModal()});
+$('expiringSoonList').addEventListener('click',e=>{
+ const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
+ const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+});
 $('expiredCard').addEventListener('click',()=>{renderExpiredList();$('expiredDialog').showModal()});
 $('expiredList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
@@ -338,7 +363,8 @@ $('expiredList').addEventListener('click',e=>{
  const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
 });
 $('favoritesBtn').addEventListener('click',()=>{renderFavoritesList();$('favoritesDialog').showModal()});
-$('wasteBtn').addEventListener('click',()=>{renderWasteDialog();$('wasteDialog').showModal()});
+$('wasteBtn').addEventListener('click',()=>{$('wasteSearch').value='';renderWasteDialog();$('wasteDialog').showModal()});
+$('wasteSearch').addEventListener('input',renderWasteList);
 $('favoritesList').addEventListener('click',e=>{const b=e.target.closest('[data-unfav-id]');if(b)removeFavorite(b.dataset.unfavId)});
 $('cabinetList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}

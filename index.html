@@ -30,7 +30,7 @@
 
       <section class="metric-grid" aria-label="Cabinet overview">
         <article class="metric-card"><span class="metric-icon blue">▦</span><strong id="totalMedicines">0</strong><small>Total medicines</small></article>
-        <article class="metric-card"><span class="metric-icon amber">◷</span><strong id="expiringSoon">0</strong><small>Expiring soon</small></article>
+        <button type="button" class="metric-card metric-card-btn" id="expiringSoonCard"><span class="metric-icon amber">◷</span><strong id="expiringSoon">0</strong><small>Expiring soon</small></button>
         <button type="button" class="metric-card metric-card-btn" id="expiredCard"><span class="metric-icon red">!</span><strong id="expiredCount">0</strong><small>Expired</small></button>
         <article class="metric-card"><span class="metric-icon green">↓</span><strong id="lowStock">0</strong><small>Running low</small></article>
       </section>
@@ -104,6 +104,7 @@
       <div class="section-heading"><div><p class="eyebrow">Thrown away</p><h3>Wasted spending</h3></div><button type="button" class="icon-button close-button" data-close="wasteDialog">×</button></div>
       <p class="muted">Deleted medicines stay logged here, even though the record itself is gone — so you can see what got tossed and roughly what it cost.</p>
       <div id="wasteSummary" class="waste-summary"></div>
+      <input type="search" id="wasteSearch" placeholder="Search deleted medicines…" class="waste-search">
       <div id="wasteList"></div>
     </div>
   </dialog>
@@ -121,6 +122,13 @@
       <div class="section-heading"><div><p class="eyebrow">Saved</p><h3>Favorites</h3></div><button type="button" class="icon-button close-button" data-close="favoritesDialog">×</button></div>
       <p class="muted">Favorites stay here even after a medicine is deleted.</p>
       <div id="favoritesList"></div>
+    </div>
+  </dialog>
+
+  <dialog id="expiringSoonDialog">
+    <div class="dialog-card">
+      <div class="section-heading"><div><p class="eyebrow">Needs attention</p><h3>Expiring soon</h3></div><button type="button" class="icon-button close-button" data-close="expiringSoonDialog">×</button></div>
+      <div id="expiringSoonList"></div>
     </div>
   </dialog>
 
