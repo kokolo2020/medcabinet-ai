@@ -19,7 +19,12 @@ exports.handler = async (event) => {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }) };
+    console.error('scan-medicine: ANTHROPIC_API_KEY is not set');
+    return { statusCode: 500, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured in Netlify' }) };
+  }
+  if (typeof fetch !== 'function') {
+    console.error('scan-medicine: global fetch is unavailable — check Node version (needs 18+)');
+    return { statusCode: 500, body: JSON.stringify({ error: 'Server runtime misconfigured (no fetch) — check Netlify Node version' }) };
   }
 
   const prompt = `You are looking at a photo of a medicine package, box, blister strip, or bottle.
@@ -50,7 +55,8 @@ Never guess a value you can't actually read on the packaging — use null instea
 
     const data = await resp.json();
     if (!resp.ok) {
-      return { statusCode: resp.status, body: JSON.stringify({ error: data.error?.message || 'Claude API error' }) };
+      console.error('scan-medicine: Claude API error', resp.status, JSON.stringify(data));
+      return { statusCode: resp.status, body: JSON.stringify({ error: data.error?.message || `Claude API error (${resp.status})` }) };
     }
 
     const text = (data.content || []).map((b) => b.text || '').join('').trim();
@@ -59,12 +65,14 @@ Never guess a value you can't actually read on the packaging — use null instea
     let parsed;
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
+    } catch (parseErr) {
+      console.error('scan-medicine: could not parse Claude response', text);
       return { statusCode: 502, body: JSON.stringify({ error: 'Could not parse scan result' }) };
     }
 
     return { statusCode: 200, body: JSON.stringify(parsed) };
   } catch (err) {
+    console.error('scan-medicine: unexpected error', err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message || 'Scan failed' }) };
   }
 };

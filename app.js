@@ -17,8 +17,8 @@ function expiryStatus(date){if(!date)return'';const days=Math.ceil((new Date(dat
 let pendingPhotoFile=null;
 let scanInProgress=false;
 
-function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=true;$('photoPreview').src='';$('scanPhotoBtn').hidden=false}
-function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreviewWrap').hidden=false;$('scanPhotoBtn').hidden=true}
+function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=true;$('photoPreview').src='';$('scanPhotoOptions').hidden=false}
+function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreviewWrap').hidden=false;$('scanPhotoOptions').hidden=true}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 
 function fillFormFromScan(d={}){
@@ -113,12 +113,14 @@ $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
 document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();resetPhotoPreview();openAdd()});
-document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInput').click());
+document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
 document.querySelectorAll('[data-action]:not([data-action="add"])').forEach(b=>b.addEventListener('click',()=>$('scanDialog').showModal()));
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{closeDialog(b.dataset.close);if(b.dataset.close==='addMedicineDialog'){$('medicineForm').reset();resetPhotoPreview()}}));
-$('photoInput').addEventListener('change',handlePhotoSelected);
-$('scanPhotoBtn').addEventListener('click',()=>$('photoInput').click());
-$('retakePhotoBtn').addEventListener('click',()=>$('photoInput').click());
+$('photoInputCamera').addEventListener('change',handlePhotoSelected);
+$('photoInputGallery').addEventListener('change',handlePhotoSelected);
+$('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());
+$('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
+$('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEventListener('click',loadMedicines);
 $('medicineList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-id]');if(b)deleteMedicine(b.dataset.deleteId)});
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
