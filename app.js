@@ -180,6 +180,42 @@ function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreview
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 function toggleDosageFields(){const on=!$('storageOnly').checked;$('dosageAmountLabel').hidden=!on;$('dosageFrequencyLabel').hidden=!on}
 
+function openDetail(id){
+ const m=currentItems.find(i=>i.id===id)||expiredItems.find(i=>i.id===id)||expiringSoonItems.find(i=>i.id===id);
+ if(!m)return;
+ $('detailPhoto').innerHTML=m.photo_url?`<img src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<span class="detail-photo-fallback">${esc((m.brand_name||'?')[0].toUpperCase())}</span>`;
+ $('detailName').textContent=[m.brand_name,m.strength].filter(Boolean).join(' ')||'Unnamed medicine';
+ const status=expiryStatus(m.expiry_date);
+ $('detailStatus').textContent=status||`${m.quantity||0} in stock`;
+ $('detailStatus').className='status '+(status==='Expired'?'amber-status':status==='Expires soon'?'soon-status':'green-status');
+ const cat=m.category||'Uncategorized';
+ const catStyle=CATEGORY_STYLES[cat]||CATEGORY_STYLES.Other;
+ $('detailCategoryTag').textContent=`${catStyle.icon} ${cat}`;
+ $('detailCategoryTag').style.background=catStyle.bg;
+ $('detailCategoryTag').style.color=catStyle.color;
+ let notes=m.notes||'',location='';
+ const locMatch=notes.match(/(^|\n)Location: (.+)$/);
+ if(locMatch){location=locMatch[2];notes=notes.replace(locMatch[0],'').trim()}
+ const runOut=estimateRunOutDate(m);
+ const rows=[
+  ['📦','Quantity',m.quantity?`${m.quantity} ${m.dosage_form||'units'}`:null],
+  ['📅','Expiry date',m.expiry_date||null],
+  ['📍','Location',location||null],
+  ['🏭','Manufacturer',m.manufacturer||null],
+  ['💰','Purchase price',m.purchase_price?`${symbols[m.currency]||m.currency+' '}${Number(m.purchase_price).toLocaleString()}${m.price_estimated?' (est.)':''}`:null],
+  ['🏪','Bought at',m.purchase_store||null],
+  ['💊','Dosage',m.is_storage_only?'For storage only':(m.dosage_amount?`${m.dosage_amount} per ${m.dosage_frequency}`:null)],
+  ['⏳','Estimated run-out',runOut||null],
+  ['🔖','Barcode',m.barcode||null],
+  ['📝','Notes',notes||null],
+ ].filter(r=>r[2]);
+ $('detailRows').innerHTML=rows.map(([icon,label,value])=>`<div class="detail-row"><span class="detail-row-label">${icon} ${esc(label)}</span><span class="detail-row-value">${esc(value)}</span></div>`).join('');
+ const isFav=favoriteMedicineIds().has(m.id);
+ $('detailFavBtn').textContent=isFav?'★ Favorited':'☆ Favorite';
+ $('detailDialog').dataset.id=m.id;
+ $('detailDialog').showModal();
+}
+
 function resetEditState(){editingId=null;editingPhotoUrl=null;editingOriginalPrice=null;editingPriceEstimated=false;$('dialogEyebrow').textContent='New inventory item';$('dialogTitle').textContent='Add medicine';$('saveMedicineBtn').textContent='Save medicine'}
 
 function editMedicine(id){
@@ -364,19 +400,22 @@ $('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEve
 $('medicineList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
  const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
- const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+ const fav=e.target.closest('[data-fav-toggle]');if(fav){toggleFavorite(fav.dataset.favToggle);return}
+ const row=e.target.closest('.medicine-row');if(row)openDetail(row.dataset.id);
 });
 $('expiringSoonCard').addEventListener('click',()=>{renderExpiringSoonList();$('expiringSoonDialog').showModal()});
 $('expiringSoonList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
  const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
- const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+ const fav=e.target.closest('[data-fav-toggle]');if(fav){toggleFavorite(fav.dataset.favToggle);return}
+ const row=e.target.closest('.medicine-row');if(row)openDetail(row.dataset.id);
 });
 $('expiredCard').addEventListener('click',()=>{renderExpiredList();$('expiredDialog').showModal()});
 $('expiredList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
  const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
- const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+ const fav=e.target.closest('[data-fav-toggle]');if(fav){toggleFavorite(fav.dataset.favToggle);return}
+ const row=e.target.closest('.medicine-row');if(row)openDetail(row.dataset.id);
 });
 $('favoritesBtn').addEventListener('click',()=>{renderFavoritesList();$('favoritesDialog').showModal()});
 $('wasteBtn').addEventListener('click',()=>{$('wasteSearch').value='';renderWasteDialog();$('wasteDialog').showModal()});
@@ -385,8 +424,12 @@ $('favoritesList').addEventListener('click',e=>{const b=e.target.closest('[data-
 $('cabinetList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
  const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
- const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+ const fav=e.target.closest('[data-fav-toggle]');if(fav){toggleFavorite(fav.dataset.favToggle);return}
+ const row=e.target.closest('.medicine-row');if(row)openDetail(row.dataset.id);
 });
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
+$('detailEditBtn').addEventListener('click',()=>{const id=$('detailDialog').dataset.id;closeDialog('detailDialog');editMedicine(id)});
+$('detailFavBtn').addEventListener('click',async()=>{const id=$('detailDialog').dataset.id;await toggleFavorite(id);const isFav=favoriteMedicineIds().has(id);$('detailFavBtn').textContent=isFav?'★ Favorited':'☆ Favorite'});
+$('detailDeleteBtn').addEventListener('click',async()=>{const id=$('detailDialog').dataset.id;await deleteMedicine(id);closeDialog('detailDialog')});
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
 loadMedicines();

@@ -141,6 +141,24 @@
     </div>
   </dialog>
 
+  <dialog id="detailDialog">
+    <div class="dialog-card detail-card">
+      <button type="button" class="icon-button close-button detail-close" data-close="detailDialog">×</button>
+      <div id="detailPhoto" class="detail-photo"></div>
+      <div class="detail-header">
+        <h3 id="detailName"></h3>
+        <span class="status" id="detailStatus"></span>
+      </div>
+      <span class="detail-category-tag" id="detailCategoryTag"></span>
+      <div class="detail-rows" id="detailRows"></div>
+      <div class="detail-actions">
+        <button type="button" class="secondary-button" id="detailEditBtn">✎ Edit</button>
+        <button type="button" class="secondary-button" id="detailFavBtn">☆ Favorite</button>
+        <button type="button" class="secondary-button detail-delete-btn" id="detailDeleteBtn">🗑 Delete</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="reportDialog"><form method="dialog" class="dialog-card report-card"><button class="icon-button close-button report-close" value="cancel">×</button><p class="eyebrow">My MedCabinet AI report</p><h2>Cabinet Score <span>82</span></h2><p class="report-grade">Excellent organization</p><div class="report-stats"><div><strong id="reportMedicineCount">0</strong><small>Medicines</small></div><div><strong id="reportExpiredCount">0</strong><small>Expired</small></div><div><strong id="reportExpiringCount">0</strong><small>Expiring</small></div><div><strong id="reportValue">฿0</strong><small>Cabinet value</small></div></div><p class="powered">Powered by MedCabinet AI</p><button class="primary-button" id="nativeShareBtn" value="cancel">Share this report</button></form></dialog>
 
   <input type="file" id="photoInputCamera" accept="image/*" capture="environment" hidden>
