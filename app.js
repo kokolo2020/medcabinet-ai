@@ -259,6 +259,7 @@ async function loadMedicines(){
   expiredItems=[];
   expiringSoonItems=[];
   items.forEach(m=>{if(m.expiry_date){const d=(new Date(m.expiry_date+'T00:00:00')-today)/86400000;if(d<0){expired++;expiredItems.push(m)}else if(d<=90){soon++;expiringSoonItems.push(m)}}if((m.quantity||0)<=5)low++;total+=Number(m.purchase_price||0)});
+  expiringSoonItems.sort((a,b)=>a.expiry_date.localeCompare(b.expiry_date));
   $('expiredCount').textContent=expired;$('expiringSoon').textContent=soon;$('lowStock').textContent=low;
   const code=currentCurrency(),sym=symbols[code]||code+' ';$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
   $('reportMedicineCount').textContent=items.length;$('reportExpiredCount').textContent=expired;$('reportExpiringCount').textContent=soon;
