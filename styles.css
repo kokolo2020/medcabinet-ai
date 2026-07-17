@@ -237,3 +237,28 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .icon-button svg{width:21px;height:21px}
 .fav-btn svg,.edit-btn svg,.delete-btn svg{width:18px;height:18px;display:block}
 .fav-btn,.edit-btn,.delete-btn{display:grid;place-items:center}
+
+/* Tablet & desktop: use the width instead of floating a narrow phone column */
+@media(min-width:700px){
+  .app-shell{max-width:920px;padding:0 32px 120px}
+  .bottom-nav{width:min(920px,100%)}
+  .metric-grid{grid-template-columns:repeat(4,1fr);gap:14px}
+  .metric-card{padding:22px}
+  .metric-card strong{font-size:2rem}
+  dialog{width:min(640px,92%)}
+  .medicine-row.medicine-row-rich{flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
+  .row-main{flex:1}
+  .row-actions{padding-left:0;flex-shrink:0}
+  .row-actions .status{margin-right:8px}
+  #medicineList,#cabinetList .category-group-items{display:block}
+  .action-grid-single button{max-width:420px}
+  .topbar{padding-top:34px}
+  h1{font-size:1.8rem}
+}
+
+@media(min-width:1000px){
+  .app-shell{max-width:1080px}
+  .bottom-nav{width:min(1080px,100%)}
+  #medicineList{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+  #medicineList .empty-state{grid-column:1/-1}
+}
