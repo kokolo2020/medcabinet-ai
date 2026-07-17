@@ -27,13 +27,8 @@
       <section class="metric-grid" aria-label="Cabinet overview">
         <article class="metric-card"><span class="metric-icon blue">▦</span><strong id="totalMedicines">0</strong><small>Total medicines</small></article>
         <article class="metric-card"><span class="metric-icon amber">◷</span><strong id="expiringSoon">0</strong><small>Expiring soon</small></article>
-        <article class="metric-card"><span class="metric-icon red">!</span><strong id="expiredCount">0</strong><small>Expired</small></article>
+        <button type="button" class="metric-card metric-card-btn" id="expiredCard"><span class="metric-icon red">!</span><strong id="expiredCount">0</strong><small>Expired</small></button>
         <article class="metric-card"><span class="metric-icon green">↓</span><strong id="lowStock">0</strong><small>Running low</small></article>
-      </section>
-
-      <section class="panel">
-        <div class="section-heading"><div><p class="eyebrow">Monthly overview</p><h3>Medicine spending</h3></div><strong id="monthlySpend">฿0</strong></div>
-        <div class="mini-chart" aria-label="Sample monthly spending chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       </section>
 
       <section class="panel">
@@ -94,6 +89,13 @@
   <dialog id="currencyDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Preferences</p><h3>Home currency</h3></div><button class="icon-button close-button" value="cancel">×</button></div><p class="muted">Thai Baht is selected by default for testing.</p><label for="currencySelect">Currency</label><select id="currencySelect"><option value="THB">Thai Baht (THB)</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="GBP">British Pound (GBP)</option><option value="SGD">Singapore Dollar (SGD)</option><option value="KHR">Cambodian Riel (KHR)</option><option value="JPY">Japanese Yen (JPY)</option></select><button class="primary-button" id="saveCurrencyBtn" value="default">Save currency</button></form></dialog>
 
   <dialog id="scanDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Smart scan</p><h3>What would you like to do?</h3></div><button class="icon-button close-button" value="cancel">×</button></div><div class="scan-options"><button type="button" data-scan-action="add"><b>＋</b><span>Add a new medicine</span></button><button value="cancel"><b>▦</b><span>Scan a whole cabinet</span></button><button value="cancel"><b>✓</b><span>Check before buying</span></button><button value="cancel"><b>▤</b><span>Scan purchase receipt</span></button></div></form></dialog>
+
+  <dialog id="expiredDialog">
+    <div class="dialog-card">
+      <div class="section-heading"><div><p class="eyebrow">Needs attention</p><h3>Expired medicines</h3></div><button type="button" class="icon-button close-button" data-close="expiredDialog">×</button></div>
+      <div id="expiredList"></div>
+    </div>
+  </dialog>
 
   <dialog id="reportDialog"><form method="dialog" class="dialog-card report-card"><button class="icon-button close-button report-close" value="cancel">×</button><p class="eyebrow">My MedCabinet AI report</p><h2>Cabinet Score <span>82</span></h2><p class="report-grade">Excellent organization</p><div class="report-stats"><div><strong id="reportMedicineCount">0</strong><small>Medicines</small></div><div><strong id="reportExpiredCount">0</strong><small>Expired</small></div><div><strong id="reportExpiringCount">0</strong><small>Expiring</small></div><div><strong id="reportValue">฿0</strong><small>Cabinet value</small></div></div><p class="powered">Powered by MedCabinet AI</p><button class="primary-button" id="nativeShareBtn" value="cancel">Share this report</button></form></dialog>
 

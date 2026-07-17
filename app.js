@@ -14,6 +14,14 @@ function expiryStatus(date){if(!date)return'';const days=Math.ceil((new Date(dat
 
 let pendingPhotoFile=null;
 let scanInProgress=false;
+let expiredItems=[];
+
+function renderExpiredList(){
+ $('expiredList').innerHTML=expiredItems.length?expiredItems.map(m=>{
+  const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
+  return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>Expired ${esc(m.expiry_date||'')}</small></div><span class="status amber-status">Expired</span><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
+ }).join(''):'<p class="empty-state">Nothing expired. Nice.</p>';
+}
 
 function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=true;$('photoPreview').src='';$('scanPhotoOptions').hidden=false}
 function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreviewWrap').hidden=false;$('scanPhotoOptions').hidden=true}
@@ -69,14 +77,16 @@ async function loadMedicines(){
   if(error)throw new Error(error.message||'Load failed');
   $('totalMedicines').textContent=items.length;
   const today=new Date();let expired=0,soon=0,low=0,total=0;
-  items.forEach(m=>{if(m.expiry_date){const d=(new Date(m.expiry_date+'T00:00:00')-today)/86400000;if(d<0)expired++;else if(d<=90)soon++;}if((m.quantity||0)<=5)low++;total+=Number(m.purchase_price||0)});
+  expiredItems=[];
+  items.forEach(m=>{if(m.expiry_date){const d=(new Date(m.expiry_date+'T00:00:00')-today)/86400000;if(d<0){expired++;expiredItems.push(m)}else if(d<=90)soon++;}if((m.quantity||0)<=5)low++;total+=Number(m.purchase_price||0)});
   $('expiredCount').textContent=expired;$('expiringSoon').textContent=soon;$('lowStock').textContent=low;
-  const code=currentCurrency(),sym=symbols[code]||code+' ';$('monthlySpend').textContent=`${sym}${total.toLocaleString()}`;$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
+  const code=currentCurrency(),sym=symbols[code]||code+' ';$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
   $('reportMedicineCount').textContent=items.length;$('reportExpiredCount').textContent=expired;$('reportExpiringCount').textContent=soon;
   $('medicineList').innerHTML=items.length?items.map(m=>{
    const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
    return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${esc(m.category||m.dosage_form||'Medicine')} · ${m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date'}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
   }).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
+  if($('expiredDialog').open)renderExpiredList();
  }catch(e){console.error(e);showToast(e.message)}
 }
 
@@ -103,7 +113,7 @@ async function saveMedicine(e){
   const {error}=await sb.from('medicines').insert(payload);
   if(error)throw new Error(error.message||error.hint||'Save failed');
   $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
- }catch(e){console.error('SAVE ERROR:',e);showToast(e.message||'Save failed');alert('Save failed:\n\n'+(e&&e.message?e.message:JSON.stringify(e)))}finally{btn.disabled=false;btn.textContent='Save medicine'}
+ }catch(e){console.error(e);showToast(e.message||'Save failed')}finally{btn.disabled=false;btn.textContent='Save medicine'}
 }
 
 setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;applyCurrency(saved);
@@ -121,6 +131,8 @@ $('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click())
 $('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEventListener('click',loadMedicines);
 $('medicineList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-id]');if(b)deleteMedicine(b.dataset.deleteId)});
+$('expiredCard').addEventListener('click',()=>{renderExpiredList();$('expiredDialog').showModal()});
+$('expiredList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-id]');if(b)deleteMedicine(b.dataset.deleteId)});
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
 loadMedicines();
