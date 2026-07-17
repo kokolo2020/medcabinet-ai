@@ -121,10 +121,18 @@ async function renderWasteDialog(){
  if(error){console.error(error);showToast(error.message);return}
  wasteRows=data||[];
  const sym=symbols[currentCurrency()]||currentCurrency()+' ';
+ const fmt=n=>`${sym}${n.toLocaleString(undefined,{maximumFractionDigits:0})}`;
  const byYear={};
  wasteRows.forEach(r=>{const y=new Date(r.deleted_at).getFullYear();byYear[y]=(byYear[y]||0)+Number(r.purchase_price||0)});
  const years=Object.keys(byYear).sort((a,b)=>b-a);
- $('wasteSummary').innerHTML=years.length?years.map(y=>`<div class="waste-year-row"><strong>${y}</strong><span>${sym}${byYear[y].toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>`).join(''):'';
+ const expiredInCabinet=expiredItems.reduce((t,m)=>t+Number(m.purchase_price||0),0);
+ const deletedExpired=wasteRows.filter(r=>r.was_expired).reduce((t,r)=>t+Number(r.purchase_price||0),0);
+ const totalLostToExpiry=expiredInCabinet+deletedExpired;
+ let html='';
+ html+=`<div class="waste-total-row"><strong>💸 Total lost to expiry</strong><span>${fmt(totalLostToExpiry)}</span></div>`;
+ if(expiredInCabinet>0)html+=`<div class="waste-year-row"><strong>Expired, still in cabinet (${expiredItems.length})</strong><span>${fmt(expiredInCabinet)}</span></div>`;
+ html+=years.map(y=>`<div class="waste-year-row"><strong>Deleted in ${y}</strong><span>${fmt(byYear[y])}</span></div>`).join('');
+ $('wasteSummary').innerHTML=html;
  renderWasteList();
 }
 
