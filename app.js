@@ -40,8 +40,11 @@ function medicineRowHtml(m,favIds){
  const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
  const isFav=favIds.has(m.id);
  const runOut=estimateRunOutDate(m);
- const subtext=[esc(m.category||m.dosage_form||'Medicine'),m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date',runOut?'~runs out '+esc(runOut):''].filter(Boolean).join(' · ');
- return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${subtext}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="edit-btn" data-edit-id="${esc(m.id)}" aria-label="Edit ${esc(m.brand_name||'medicine')}">✎</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
+ const status=expiryStatus(m.expiry_date);
+ const expiryClass=status==='Expired'?'expiry-tag-expired':status==='Expires soon'?'expiry-tag-soon':'expiry-tag-ok';
+ const expiryHtml=m.expiry_date?`<span class="expiry-tag ${expiryClass}">Expires ${esc(m.expiry_date)}</span>`:'No expiry date';
+ const subtext=[esc(m.category||m.dosage_form||'Medicine'),expiryHtml,runOut?'~runs out '+esc(runOut):''].filter(Boolean).join(' · ');
+ return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${subtext}</small></div><span class="status ${status==='Expired'?'amber-status':'green-status'}">${status||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="edit-btn" data-edit-id="${esc(m.id)}" aria-label="Edit ${esc(m.brand_name||'medicine')}">✎</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
 }
 
 function renderMedicineList(){

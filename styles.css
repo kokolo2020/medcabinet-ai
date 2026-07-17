@@ -71,6 +71,10 @@ h3{font-family:Fraunces,serif;font-size:1.18rem;font-weight:600;margin-bottom:0;
 .medicine-row strong,.medicine-row small{display:block}
 .medicine-row strong{font-weight:650;letter-spacing:-.005em}
 .medicine-row small{color:var(--muted);margin-top:4px;font-size:.76rem}
+.expiry-tag{font-weight:750}
+.expiry-tag-ok{color:var(--emerald)}
+.expiry-tag-soon{color:var(--amber)}
+.expiry-tag-expired{color:var(--coral)}
 .status{padding:7px 10px;border-radius:999px;font-size:.66rem;font-weight:750;white-space:nowrap}
 .green-status{background:var(--mint-soft);color:var(--emerald)}
 .amber-status{background:var(--coral-soft);color:var(--coral)}
