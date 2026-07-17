@@ -28,6 +28,7 @@ exports.handler = async (event) => {
   }
 
   const prompt = `You are looking at a photo of a medicine package, box, blister strip, or bottle.
+For the expiry date specifically: check both printed text AND any handwritten date written directly on the packaging (e.g. marker or pen) — people often write the expiry date by hand when the printed one is on a hidden side of the box. A handwritten date is just as valid as a printed one.
 Extract what you can actually read and respond with ONLY a JSON object, no markdown fences, no extra text, in exactly this shape:
 {"brand_name": string or null, "generic_name": string or null, "strength": string or null, "dosage_form": one of "Tablet","Capsule","Syrup","Cream","Drops","Injection","Other" or null, "category": one of "Pain relief","Cold & flu","Allergy","Antibiotic","Anti-seizure","Digestive","Vitamins & supplements","First aid","Other" or null, "expiry_date": "YYYY-MM-DD" or null, "barcode": string or null, "manufacturer": string or null}
 Never guess a value you can't actually read on the packaging — use null instead.`;
