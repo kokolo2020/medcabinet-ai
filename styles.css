@@ -87,8 +87,17 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .dialog-card{background:var(--surface);border-radius:26px;padding:24px;box-shadow:var(--shadow-lg);border:1px solid var(--line)}
 .close-button{background:var(--paper-deep);color:var(--ink-soft)}
 .muted{color:var(--muted);line-height:1.6;font-size:.9rem}
-.dialog-card label{display:block;font-size:.78rem;font-weight:700;margin-bottom:7px;color:var(--ink-soft)}
-.dialog-card select{width:100%;padding:14px;border:1px solid var(--line);border-radius:14px;margin-bottom:14px;background:var(--surface)}
+.dialog-card label{display:flex;flex-direction:column;gap:8px;font-size:.78rem;font-weight:700;color:var(--ink-soft)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin-bottom:4px}
+.form-grid .full{grid-column:1/-1}
+.dialog-card input,.dialog-card select,.dialog-card textarea{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-weight:600;font-size:.92rem;color:var(--ink)}
+.dialog-card input::placeholder,.dialog-card textarea::placeholder{color:#a9b3ac;font-weight:500}
+.dialog-card input:focus,.dialog-card select:focus,.dialog-card textarea:focus{outline:none;border-color:var(--mint);box-shadow:0 0 0 3px rgba(55,180,138,.18)}
+.dialog-card select{margin-bottom:16px}
+.dialog-card textarea{resize:vertical}
+.form-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:20px}
+.form-footer #formCurrencyLabel{font-size:.78rem;color:var(--muted);font-weight:600}
+.form-footer .primary-button{width:auto;padding:13px 22px}
 
 .photo-capture-row{margin-bottom:16px}
 .scan-photo-btn{display:flex;align-items:center;gap:10px;width:100%;border:1.5px dashed var(--emerald);background:var(--mint-soft);color:var(--emerald);border-radius:14px;padding:15px;font-weight:700;cursor:pointer;transition:.15s background}
