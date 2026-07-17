@@ -11,6 +11,25 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="splashScreen" class="splash-screen">
+    <div class="splash-icon">💊</div>
+    <h1 class="splash-title">MedCabinet <span>AI</span></h1>
+    <p class="splash-tagline">Your smart digital medicine cabinet</p>
+    <ul class="splash-benefits">
+      <li><span class="splash-benefit-icon">📦</span>Know what you have</li>
+      <li><span class="splash-benefit-icon">📅</span>Never miss expiry</li>
+      <li><span class="splash-benefit-icon">🔁</span>Avoid duplicates</li>
+      <li><span class="splash-benefit-icon">💰</span>Save money</li>
+      <li><span class="splash-benefit-icon">❤️</span>Stay healthy</li>
+    </ul>
+  </div>
+  <script>
+    setTimeout(function(){
+      var s=document.getElementById('splashScreen');
+      if(s){s.classList.add('hide');setTimeout(function(){s.remove()},500);}
+    },3000);
+  </script>
+
   <div class="app-shell">
     <header class="topbar">
       <div><p class="eyebrow">Good morning</p><h1>My MedCabinet</h1></div>

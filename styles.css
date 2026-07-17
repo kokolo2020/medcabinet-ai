@@ -204,3 +204,13 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
 @media(max-width:370px){.score-ring{display:none}.action-grid{grid-template-columns:1fr}.app-shell{padding-left:12px;padding-right:12px}}
+
+.splash-screen{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 70% at 20% -10%,#eef7f1 0%,var(--paper) 45%,var(--paper) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;text-align:center;transition:opacity .5s ease,visibility .5s ease}
+.splash-screen.hide{opacity:0;visibility:hidden;pointer-events:none}
+.splash-icon{width:100px;height:100px;border-radius:32px;background:linear-gradient(150deg,var(--mint),var(--emerald));display:grid;place-items:center;font-size:2.8rem;box-shadow:0 16px 34px rgba(31,111,92,.28);margin-bottom:26px}
+.splash-title{font-family:Fraunces,serif;font-weight:600;font-size:2rem;color:var(--pine);letter-spacing:-.02em;margin-bottom:10px}
+.splash-title span{color:var(--emerald)}
+.splash-tagline{color:var(--muted);font-size:1rem;margin-bottom:38px;max-width:280px}
+.splash-benefits{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:16px;text-align:left}
+.splash-benefits li{display:flex;align-items:center;gap:14px;font-weight:650;color:var(--ink);font-size:.95rem}
+.splash-benefit-icon{width:34px;height:34px;border-radius:11px;background:var(--mint-soft);display:grid;place-items:center;font-size:1.05rem;flex-shrink:0}
