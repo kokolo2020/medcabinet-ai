@@ -265,3 +265,10 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
   #medicineList{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
   #medicineList .empty-state{grid-column:1/-1}
 }
+
+.expiry-prompt-card{text-align:center;padding:28px 24px}
+.expiry-prompt-icon{width:64px;height:64px;border-radius:20px;background:var(--orange-soft);display:grid;place-items:center;font-size:1.9rem;margin:0 auto 16px}
+.expiry-prompt-card h3{margin-bottom:8px}
+.expiry-prompt-card .muted{margin-bottom:20px}
+.expiry-prompt-card .primary-button{margin-bottom:12px}
+.expiry-prompt-skip{display:block;margin:0 auto;font-size:.85rem}

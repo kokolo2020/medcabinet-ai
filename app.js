@@ -291,9 +291,7 @@ async function handlePhotoSelected(e){
   fillFormFromScan(data);
   showPhotoPreview(dataUrl);
   showToast(data.expiry_date?'Scanned — check the details and save':'Scanned — no expiry date found');
-  if(!data.expiry_date&&confirm("Couldn't find an expiry date on that photo. Take a close-up of just the date now?")){
-   $('photoInputExpiry').click();
-  }
+  if(!data.expiry_date)$('expiryPromptDialog').showModal();
  }catch(err){
   console.error(err);
   pendingPhotoFile=file;
@@ -430,6 +428,8 @@ $('photoInputCamera').addEventListener('change',handlePhotoSelected);
 $('photoInputGallery').addEventListener('change',handlePhotoSelected);
 $('photoInputExpiry').addEventListener('change',handleExpiryPhotoSelected);
 $('scanExpiryBtn').addEventListener('click',()=>$('photoInputExpiry').click());
+$('expiryPromptTakeBtn').addEventListener('click',()=>{closeDialog('expiryPromptDialog');$('photoInputExpiry').click()});
+$('expiryPromptSkipBtn').addEventListener('click',()=>{closeDialog('expiryPromptDialog');$('expiryDate').focus()});
 $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());
 $('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
