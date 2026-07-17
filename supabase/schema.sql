@@ -56,3 +56,33 @@ create policy "public photo read" on storage.objects
 
 create policy "public photo upload" on storage.objects
   for insert with check (bucket_id = 'medicine-photos');
+
+-- Favorites: intentionally NOT a foreign key to medicines(id) — a snapshot of
+-- the medicine's details at the time it was favorited, so it survives the
+-- original medicine being deleted.
+create table if not exists public.favorites (
+  id uuid primary key default gen_random_uuid(),
+  medicine_id uuid,
+  brand_name text not null,
+  manufacturer text,
+  strength text,
+  dosage_form text,
+  category text,
+  photo_url text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists favorites_medicine_idx on public.favorites(medicine_id);
+
+alter table public.favorites enable row level security;
+
+drop policy if exists "public read" on public.favorites;
+drop policy if exists "public insert" on public.favorites;
+drop policy if exists "public delete" on public.favorites;
+
+create policy "public read" on public.favorites for select using (true);
+create policy "public insert" on public.favorites for insert with check (true);
+create policy "public delete" on public.favorites for delete using (true);
+
+notify pgrst, 'reload schema';

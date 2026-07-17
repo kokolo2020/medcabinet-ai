@@ -15,12 +15,70 @@ function expiryStatus(date){if(!date)return'';const days=Math.ceil((new Date(dat
 let pendingPhotoFile=null;
 let scanInProgress=false;
 let expiredItems=[];
+let currentItems=[];
+let favoriteRows=[];
+
+function favoriteMedicineIds(){return new Set(favoriteRows.filter(f=>f.medicine_id).map(f=>f.medicine_id))}
+
+function medicineRowHtml(m,favIds){
+ const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
+ const isFav=favIds.has(m.id);
+ return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${esc(m.category||m.dosage_form||'Medicine')} · ${m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date'}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
+}
+
+function renderMedicineList(){
+ const favIds=favoriteMedicineIds();
+ $('medicineList').innerHTML=currentItems.length?currentItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
+}
 
 function renderExpiredList(){
- $('expiredList').innerHTML=expiredItems.length?expiredItems.map(m=>{
-  const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
-  return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>Expired ${esc(m.expiry_date||'')}</small></div><span class="status amber-status">Expired</span><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
- }).join(''):'<p class="empty-state">Nothing expired. Nice.</p>';
+ const favIds=favoriteMedicineIds();
+ $('expiredList').innerHTML=expiredItems.length?expiredItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">Nothing expired. Nice.</p>';
+}
+
+function renderFavoritesList(){
+ $('favoritesList').innerHTML=favoriteRows.length?favoriteRows.map(f=>{
+  const thumb=f.photo_url?`<img class="medicine-thumb-img" src="${esc(f.photo_url)}" alt="${esc(f.brand_name||'')}">`:`<div class="medicine-thumb">${esc((f.brand_name||'?')[0].toUpperCase())}</div>`;
+  return `<div class="medicine-row" data-id="${esc(f.id)}">${thumb}<div><strong>${esc(f.brand_name||'Unnamed medicine')} ${esc(f.strength||'')}</strong><small>${esc(f.category||f.dosage_form||'Medicine')}</small></div><span></span><button type="button" class="delete-btn" data-unfav-id="${esc(f.id)}" aria-label="Remove ${esc(f.brand_name||'medicine')} from favorites">🗑</button></div>`;
+ }).join(''):'<p class="empty-state">No favorites yet. Tap the star on any medicine to save it here.</p>';
+}
+
+async function loadFavorites(){
+ const {data,error}=await sb.from('favorites').select('*').order('created_at',{ascending:false});
+ if(error){console.error(error);return}
+ favoriteRows=data||[];
+}
+
+async function toggleFavorite(medicineId){
+ try{
+  const existing=favoriteRows.find(f=>f.medicine_id===medicineId);
+  if(existing){
+   const {error}=await sb.from('favorites').delete().eq('id',existing.id);
+   if(error)throw new Error(error.message||'Could not remove favorite');
+   showToast('Removed from favorites');
+  }else{
+   const m=currentItems.find(i=>i.id===medicineId)||expiredItems.find(i=>i.id===medicineId);
+   if(!m)return;
+   const {error}=await sb.from('favorites').insert({medicine_id:m.id,brand_name:m.brand_name,manufacturer:m.manufacturer,strength:m.strength,dosage_form:m.dosage_form,category:m.category,photo_url:m.photo_url,notes:m.notes});
+   if(error)throw new Error(error.message||'Could not add favorite');
+   showToast('Added to favorites');
+  }
+  await loadFavorites();
+  renderMedicineList();
+  if($('expiredDialog').open)renderExpiredList();
+  if($('favoritesDialog').open)renderFavoritesList();
+ }catch(e){console.error(e);showToast(e.message)}
+}
+
+async function removeFavorite(favId){
+ try{
+  const {error}=await sb.from('favorites').delete().eq('id',favId);
+  if(error)throw new Error(error.message||'Could not remove favorite');
+  await loadFavorites();
+  renderFavoritesList();
+  renderMedicineList();
+  if($('expiredDialog').open)renderExpiredList();
+ }catch(e){console.error(e);showToast(e.message)}
 }
 
 function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=true;$('photoPreview').src='';$('scanPhotoOptions').hidden=false}
@@ -75,6 +133,8 @@ async function loadMedicines(){
  try{
   const {data:items,error}=await sb.from('medicines').select('*').order('created_at',{ascending:false}).limit(20);
   if(error)throw new Error(error.message||'Load failed');
+  currentItems=items;
+  await loadFavorites();
   $('totalMedicines').textContent=items.length;
   const today=new Date();let expired=0,soon=0,low=0,total=0;
   expiredItems=[];
@@ -82,11 +142,9 @@ async function loadMedicines(){
   $('expiredCount').textContent=expired;$('expiringSoon').textContent=soon;$('lowStock').textContent=low;
   const code=currentCurrency(),sym=symbols[code]||code+' ';$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
   $('reportMedicineCount').textContent=items.length;$('reportExpiredCount').textContent=expired;$('reportExpiringCount').textContent=soon;
-  $('medicineList').innerHTML=items.length?items.map(m=>{
-   const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
-   return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${esc(m.category||m.dosage_form||'Medicine')} · ${m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date'}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
-  }).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
+  renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
+  if($('favoritesDialog').open)renderFavoritesList();
  }catch(e){console.error(e);showToast(e.message)}
 }
 
@@ -130,9 +188,17 @@ $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());
 $('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEventListener('click',loadMedicines);
-$('medicineList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-id]');if(b)deleteMedicine(b.dataset.deleteId)});
+$('medicineList').addEventListener('click',e=>{
+ const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+});
 $('expiredCard').addEventListener('click',()=>{renderExpiredList();$('expiredDialog').showModal()});
-$('expiredList').addEventListener('click',e=>{const b=e.target.closest('[data-delete-id]');if(b)deleteMedicine(b.dataset.deleteId)});
+$('expiredList').addEventListener('click',e=>{
+ const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+});
+$('favoritesBtn').addEventListener('click',()=>{renderFavoritesList();$('favoritesDialog').showModal()});
+$('favoritesList').addEventListener('click',e=>{const b=e.target.closest('[data-unfav-id]');if(b)removeFavorite(b.dataset.unfavId)});
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
 loadMedicines();
