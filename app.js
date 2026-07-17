@@ -198,7 +198,8 @@ function openDetail(id){
  if(locMatch){location=locMatch[2];notes=notes.replace(locMatch[0],'').trim()}
  const runOut=estimateRunOutDate(m);
  const rows=[
-  ['📦','Quantity',m.quantity?`${m.quantity} ${m.dosage_form||'units'}`:null],
+  ['📦','Quantity',m.quantity?String(m.quantity):null],
+  ['🧾','Form',m.dosage_form&&m.dosage_form!=='Other'?m.dosage_form:null],
   ['📅','Expiry date',m.expiry_date||null],
   ['📍','Location',location||null],
   ['🏭','Manufacturer',m.manufacturer||null],
