@@ -58,13 +58,24 @@ function renderMedicineList(){
 }
 
 let cabinetActiveCategory='';
-const CATEGORY_ICONS={'Pain relief':'💊','Cold & flu':'🤧','Allergy':'🌼','Antibiotic':'🧫','Anti-seizure':'⚡','Digestive':'🍽️','Vitamins & supplements':'🌿','First aid':'🩹','Other':'📦',Uncategorized:'❔'};
+const CATEGORY_STYLES={
+ 'Pain relief':{icon:'💊',color:'var(--coral)',bg:'var(--coral-soft)'},
+ 'Cold & flu':{icon:'🤧',color:'var(--sky)',bg:'var(--sky-soft)'},
+ 'Allergy':{icon:'🌼',color:'var(--pink)',bg:'var(--pink-soft)'},
+ 'Antibiotic':{icon:'🧫',color:'var(--teal)',bg:'var(--teal-soft)'},
+ 'Anti-seizure':{icon:'⚡',color:'var(--purple)',bg:'var(--purple-soft)'},
+ 'Digestive':{icon:'🍽️',color:'var(--orange)',bg:'var(--orange-soft)'},
+ 'Vitamins & supplements':{icon:'🌿',color:'var(--emerald)',bg:'var(--mint-soft)'},
+ 'First aid':{icon:'🩹',color:'var(--amber)',bg:'var(--amber-soft)'},
+ 'Other':{icon:'📦',color:'var(--muted)',bg:'var(--paper-deep)'},
+ Uncategorized:{icon:'❔',color:'var(--muted)',bg:'var(--paper-deep)'},
+};
 
 function renderCabinetList(){
  const favIds=favoriteMedicineIds();
  const allCats=[...new Set(currentItems.map(m=>m.category||'Uncategorized'))].sort((a,b)=>a.localeCompare(b));
  $('cabinetChips').innerHTML=[`<button type="button" class="chip ${!cabinetActiveCategory?'active':''}" data-cat="">All<span>${currentItems.length}</span></button>`]
-  .concat(allCats.map(c=>`<button type="button" class="chip ${cabinetActiveCategory===c?'active':''}" data-cat="${esc(c)}">${esc(c)}<span>${currentItems.filter(m=>(m.category||'Uncategorized')===c).length}</span></button>`))
+  .concat(allCats.map(c=>{const style=CATEGORY_STYLES[c]||CATEGORY_STYLES.Other;return `<button type="button" class="chip ${cabinetActiveCategory===c?'active':''}" data-cat="${esc(c)}"><i class="chip-dot" style="background:${style.color}"></i>${esc(c)}<span>${currentItems.filter(m=>(m.category||'Uncategorized')===c).length}</span></button>`}))
   .join('');
  const groups={};
  currentItems.forEach(m=>{
@@ -75,8 +86,8 @@ function renderCabinetList(){
  const catNames=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
  $('cabinetList').innerHTML=catNames.length?catNames.map(cat=>{
   const items=groups[cat];
-  const icon=CATEGORY_ICONS[cat]||'💊';
-  return `<details class="category-group" open><summary class="category-group-header"><span class="category-group-title">${icon} ${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="category-group-items">${items.map(m=>medicineRowHtml(m,favIds)).join('')}</div></details>`;
+  const style=CATEGORY_STYLES[cat]||CATEGORY_STYLES.Other;
+  return `<details class="category-group" open style="border-left-color:${style.color}"><summary class="category-group-header"><span class="category-group-title"><span class="category-icon-chip" style="background:${style.bg};color:${style.color}">${style.icon}</span>${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="category-group-items">${items.map(m=>medicineRowHtml(m,favIds)).join('')}</div></details>`;
  }).join(''):'<p class="empty-state">No medicines in this category.</p>';
 }
 
