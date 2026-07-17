@@ -86,3 +86,10 @@ create policy "public insert" on public.favorites for insert with check (true);
 create policy "public delete" on public.favorites for delete using (true);
 
 notify pgrst, 'reload schema';
+
+-- Dosage tracking, used to estimate a run-out date (quantity / daily rate).
+alter table public.medicines add column if not exists is_storage_only boolean not null default false;
+alter table public.medicines add column if not exists dosage_amount numeric(12,2);
+alter table public.medicines add column if not exists dosage_frequency text check (dosage_frequency in ('day','week','month'));
+
+notify pgrst, 'reload schema';

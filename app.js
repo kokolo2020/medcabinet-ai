@@ -12,6 +12,15 @@ function closeDialog(id){const d=$(id);if(d?.open)d.close()}
 function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function expiryStatus(date){if(!date)return'';const days=Math.ceil((new Date(date+'T00:00:00')-new Date())/86400000);if(days<0)return'Expired';if(days<=90)return'Expires soon';return''}
 
+function estimateRunOutDate(m){
+ if(m.is_storage_only||!m.dosage_amount||!m.dosage_frequency||!m.quantity)return null;
+ const perDay=m.dosage_frequency==='day'?m.dosage_amount:m.dosage_frequency==='week'?m.dosage_amount/7:m.dosage_amount/30;
+ if(!perDay)return null;
+ const days=Math.ceil(m.quantity/perDay);
+ const d=new Date();d.setDate(d.getDate()+days);
+ return d.toISOString().slice(0,10);
+}
+
 let pendingPhotoFile=null;
 let scanInProgress=false;
 let expiredItems=[];
@@ -23,7 +32,9 @@ function favoriteMedicineIds(){return new Set(favoriteRows.filter(f=>f.medicine_
 function medicineRowHtml(m,favIds){
  const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
  const isFav=favIds.has(m.id);
- return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${esc(m.category||m.dosage_form||'Medicine')} · ${m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date'}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
+ const runOut=estimateRunOutDate(m);
+ const subtext=[esc(m.category||m.dosage_form||'Medicine'),m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date',runOut?'~runs out '+esc(runOut):''].filter(Boolean).join(' · ');
+ return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${subtext}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
 }
 
 function renderMedicineList(){
@@ -84,6 +95,7 @@ async function removeFavorite(favId){
 function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=true;$('photoPreview').src='';$('scanPhotoOptions').hidden=false}
 function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreviewWrap').hidden=false;$('scanPhotoOptions').hidden=true}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+function toggleDosageFields(){const on=!$('storageOnly').checked;$('dosageAmountLabel').hidden=!on;$('dosageFrequencyLabel').hidden=!on}
 
 function fillFormFromScan(d={}){
  $('brandName').value=d.brand_name||'';
@@ -166,11 +178,12 @@ async function saveMedicine(e){
   let photo_url=null;
   if(pendingPhotoFile){btn.textContent='Uploading photo…';photo_url=await uploadPhoto(pendingPhotoFile)}
   const boxes=Number($('boxes').value||0),qtyPerBox=Number($('qtyPerBox').value||0);
-  const payload={brand_name:$('brandName').value.trim(),manufacturer:$('manufacturer').value.trim()||null,strength:$('strength').value.trim()||null,dosage_form:$('dosageForm').value||null,quantity:boxes*qtyPerBox,expiry_date:$('expiryDate').value||null,category:$('category').value||null,purchase_price:$('purchasePrice').value?Number($('purchasePrice').value):null,currency:currentCurrency(),purchase_store:$('purchaseStore').value.trim()||null,barcode:$('barcode').value.trim()||null,photo_url,notes:[notes,location?`Location: ${location}`:''].filter(Boolean).join('\n')||null};
+  const isStorageOnly=$('storageOnly').checked;
+  const payload={brand_name:$('brandName').value.trim(),manufacturer:$('manufacturer').value.trim()||null,strength:$('strength').value.trim()||null,dosage_form:$('dosageForm').value||null,quantity:boxes*qtyPerBox,is_storage_only:isStorageOnly,dosage_amount:isStorageOnly?null:($('dosageAmount').value?Number($('dosageAmount').value):null),dosage_frequency:isStorageOnly?null:$('dosageFrequency').value,expiry_date:$('expiryDate').value||null,category:$('category').value||null,purchase_price:$('purchasePrice').value?Number($('purchasePrice').value):null,currency:currentCurrency(),purchase_store:$('purchaseStore').value.trim()||null,barcode:$('barcode').value.trim()||null,photo_url,notes:[notes,location?`Location: ${location}`:''].filter(Boolean).join('\n')||null};
   btn.textContent='Saving…';
   const {error}=await sb.from('medicines').insert(payload);
   if(error)throw new Error(error.message||error.hint||'Save failed');
-  $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
+  $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();toggleDosageFields();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
  }catch(e){console.error(e);showToast(e.message||'Save failed')}finally{btn.disabled=false;btn.textContent='Save medicine'}
 }
 
@@ -178,10 +191,12 @@ setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;appl
 $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
-document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();resetPhotoPreview();openAdd()});
+document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
 document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
 document.querySelectorAll('[data-action]:not([data-action="add"])').forEach(b=>b.addEventListener('click',()=>$('scanDialog').showModal()));
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{closeDialog(b.dataset.close);if(b.dataset.close==='addMedicineDialog'){$('medicineForm').reset();resetPhotoPreview()}}));
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{closeDialog(b.dataset.close);if(b.dataset.close==='addMedicineDialog'){$('medicineForm').reset();resetPhotoPreview();toggleDosageFields()}}));
+$('storageOnly').addEventListener('change',toggleDosageFields);
+toggleDosageFields();
 $('photoInputCamera').addEventListener('change',handlePhotoSelected);
 $('photoInputGallery').addEventListener('change',handlePhotoSelected);
 $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());

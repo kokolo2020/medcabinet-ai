@@ -77,6 +77,9 @@
         <label>Medicine form<select id="dosageForm" name="dosage_form"><option value="Tablet">Tablet</option><option value="Capsule">Capsule</option><option value="Syrup">Syrup</option><option value="Cream">Cream</option><option value="Drops">Drops</option><option value="Injection">Injection</option><option value="Other">Other</option></select></label>
         <label>Boxes<input id="boxes" name="boxes" type="number" min="0" value="1"></label>
         <label>Quantity per box<input id="qtyPerBox" name="qty_per_box" type="number" min="0" value="1"></label>
+        <label class="full checkbox-label"><input type="checkbox" id="storageOnly"> Just for storage — don't track dosage</label>
+        <label id="dosageAmountLabel">Dosage<input id="dosageAmount" name="dosage_amount" type="number" min="0" step="0.5" placeholder="e.g. 2"></label>
+        <label id="dosageFrequencyLabel">Per<select id="dosageFrequency" name="dosage_frequency"><option value="day">Day</option><option value="week">Week</option><option value="month">Month</option></select></label>
         <label>Expiry date<input id="expiryDate" name="expiry_date" type="date"></label>
         <label>Category<select id="category" name="category"><option value="">Select</option><option>Pain relief</option><option>Cold & flu</option><option>Allergy</option><option>Antibiotic</option><option>Anti-seizure</option><option>Digestive</option><option>Vitamins & supplements</option><option>First aid</option><option>Other</option></select></label>
         <label>Storage location<input id="storageLocation" placeholder="Bedroom cabinet · Shelf 2"></label>
