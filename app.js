@@ -26,6 +26,8 @@ let scanInProgress=false;
 let expiredItems=[];
 let currentItems=[];
 let favoriteRows=[];
+let homePage=1;
+const PAGE_SIZE=10;
 
 function favoriteMedicineIds(){return new Set(favoriteRows.filter(f=>f.medicine_id).map(f=>f.medicine_id))}
 
@@ -39,7 +41,19 @@ function medicineRowHtml(m,favIds){
 
 function renderMedicineList(){
  const favIds=favoriteMedicineIds();
- $('medicineList').innerHTML=currentItems.length?currentItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
+ const totalPages=Math.max(1,Math.ceil(currentItems.length/PAGE_SIZE));
+ if(homePage>totalPages)homePage=totalPages;
+ const start=(homePage-1)*PAGE_SIZE;
+ const pageItems=currentItems.slice(start,start+PAGE_SIZE);
+ $('medicineList').innerHTML=pageItems.length?pageItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
+ $('medicinePagination').innerHTML=totalPages>1?Array.from({length:totalPages},(_,i)=>i+1).map(p=>`<button type="button" class="page-btn ${p===homePage?'active':''}" data-page="${p}">${p}</button>`).join(''):'';
+}
+
+function renderCabinetList(){
+ const favIds=favoriteMedicineIds();
+ const filter=$('cabinetCategoryFilter').value;
+ const list=filter?currentItems.filter(m=>m.category===filter):currentItems;
+ $('cabinetList').innerHTML=list.length?list.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">No medicines in this category.</p>';
 }
 
 function renderExpiredList(){
@@ -78,6 +92,7 @@ async function toggleFavorite(medicineId){
   renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
   if($('favoritesDialog').open)renderFavoritesList();
+  if($('cabinetDialog').open)renderCabinetList();
  }catch(e){console.error(e);showToast(e.message)}
 }
 
@@ -89,6 +104,7 @@ async function removeFavorite(favId){
   renderFavoritesList();
   renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
+  if($('cabinetDialog').open)renderCabinetList();
  }catch(e){console.error(e);showToast(e.message)}
 }
 
@@ -157,6 +173,7 @@ async function loadMedicines(){
   renderMedicineList();
   if($('expiredDialog').open)renderExpiredList();
   if($('favoritesDialog').open)renderFavoritesList();
+  if($('cabinetDialog').open)renderCabinetList();
  }catch(e){console.error(e);showToast(e.message)}
 }
 
@@ -190,8 +207,10 @@ async function saveMedicine(e){
 setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;applyCurrency(saved);
 $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
-$('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smooth'});$('navHome').classList.add('active');$('navCabinet').classList.remove('active')});
-$('navCabinet').addEventListener('click',()=>{$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'});$('navCabinet').classList.add('active');$('navHome').classList.remove('active')});
+$('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smooth'})});
+$('navCabinet').addEventListener('click',()=>{$('cabinetCategoryFilter').value='';renderCabinetList();$('cabinetDialog').showModal()});
+$('cabinetCategoryFilter').addEventListener('change',renderCabinetList);
+$('medicinePagination').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b){homePage=Number(b.dataset.page);renderMedicineList();$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'})}});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
 document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
 document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
@@ -216,6 +235,10 @@ $('expiredList').addEventListener('click',e=>{
 });
 $('favoritesBtn').addEventListener('click',()=>{renderFavoritesList();$('favoritesDialog').showModal()});
 $('favoritesList').addEventListener('click',e=>{const b=e.target.closest('[data-unfav-id]');if(b)removeFavorite(b.dataset.unfavId)});
+$('cabinetList').addEventListener('click',e=>{
+ const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
+});
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
 loadMedicines();
