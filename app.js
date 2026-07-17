@@ -143,7 +143,7 @@ async function uploadPhoto(file){
 
 async function loadMedicines(){
  try{
-  const {data:items,error}=await sb.from('medicines').select('*').order('created_at',{ascending:false}).limit(20);
+  const {data:items,error}=await sb.from('medicines').select('*').order('created_at',{ascending:false}).limit(500);
   if(error)throw new Error(error.message||'Load failed');
   currentItems=items;
   await loadFavorites();
@@ -190,6 +190,8 @@ async function saveMedicine(e){
 setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;applyCurrency(saved);
 $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
+$('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smooth'});$('navHome').classList.add('active');$('navCabinet').classList.remove('active')});
+$('navCabinet').addEventListener('click',()=>{$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'});$('navCabinet').classList.add('active');$('navHome').classList.remove('active')});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
 document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
 document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
