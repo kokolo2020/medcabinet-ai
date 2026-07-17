@@ -85,6 +85,11 @@ h3{font-family:Fraunces,serif;font-size:1.18rem;font-weight:600;margin-bottom:0;
 .pagination{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
 .page-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);width:36px;height:36px;border-radius:11px;font-weight:700;cursor:pointer}
 .page-btn.active{background:var(--emerald);border-color:var(--emerald);color:#fff}
+.waste-summary{margin-bottom:16px}
+.waste-year-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--coral-soft);border-radius:14px;margin-bottom:8px}
+.waste-year-row strong{font-family:Fraunces,serif;font-weight:600;color:var(--ink)}
+.waste-year-row span{color:var(--coral);font-weight:700}
+.estimated-tag{font-size:.68rem;color:var(--muted);font-style:italic}
 
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);padding:11px 14px calc(11px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;background:rgba(250,247,240,.92);backdrop-filter:blur(20px);border-top:1px solid var(--line);z-index:4}
 .bottom-nav button{border:0;background:none;color:#8b9891;font-weight:650;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}

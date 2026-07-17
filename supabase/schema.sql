@@ -93,3 +93,34 @@ alter table public.medicines add column if not exists dosage_amount numeric(12,2
 alter table public.medicines add column if not exists dosage_frequency text check (dosage_frequency in ('day','week','month'));
 
 notify pgrst, 'reload schema';
+
+-- Flags whether purchase_price was AI-estimated rather than entered by hand.
+alter table public.medicines add column if not exists price_estimated boolean not null default false;
+
+-- Snapshot log of deleted medicines, kept independently so waste totals
+-- survive the original row being deleted (same pattern as favorites).
+create table if not exists public.deleted_medicines (
+  id uuid primary key default gen_random_uuid(),
+  medicine_id uuid,
+  brand_name text,
+  category text,
+  quantity numeric(12,2),
+  purchase_price numeric(12,2),
+  price_estimated boolean not null default false,
+  currency text,
+  expiry_date date,
+  was_expired boolean,
+  deleted_at timestamptz not null default now()
+);
+
+create index if not exists deleted_medicines_deleted_at_idx on public.deleted_medicines(deleted_at);
+
+alter table public.deleted_medicines enable row level security;
+
+drop policy if exists "public read" on public.deleted_medicines;
+drop policy if exists "public insert" on public.deleted_medicines;
+
+create policy "public read" on public.deleted_medicines for select using (true);
+create policy "public insert" on public.deleted_medicines for insert with check (true);
+
+notify pgrst, 'reload schema';

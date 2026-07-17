@@ -15,6 +15,7 @@
     <header class="topbar">
       <div><p class="eyebrow">Good morning</p><h1>My MedCabinet</h1></div>
       <div class="topbar-actions">
+        <button class="icon-button" id="wasteBtn" aria-label="Wasted spending">💸</button>
         <button class="icon-button" id="favoritesBtn" aria-label="Favorites">★</button>
         <button class="icon-button" id="currencyBtn" aria-label="Change home currency">฿</button>
       </div>
@@ -97,6 +98,15 @@
   <dialog id="currencyDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Preferences</p><h3>Home currency</h3></div><button class="icon-button close-button" value="cancel">×</button></div><p class="muted">Thai Baht is selected by default for testing.</p><label for="currencySelect">Currency</label><select id="currencySelect"><option value="THB">Thai Baht (THB)</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="GBP">British Pound (GBP)</option><option value="SGD">Singapore Dollar (SGD)</option><option value="KHR">Cambodian Riel (KHR)</option><option value="JPY">Japanese Yen (JPY)</option></select><button class="primary-button" id="saveCurrencyBtn" value="default">Save currency</button></form></dialog>
 
   <dialog id="scanDialog"><form method="dialog" class="dialog-card"><div class="section-heading"><div><p class="eyebrow">Smart scan</p><h3>What would you like to do?</h3></div><button class="icon-button close-button" value="cancel">×</button></div><div class="scan-options"><button type="button" data-scan-action="add"><b>＋</b><span>Add a new medicine</span></button><button value="cancel"><b>▦</b><span>Scan a whole cabinet</span></button><button value="cancel"><b>✓</b><span>Check before buying</span></button><button value="cancel"><b>▤</b><span>Scan purchase receipt</span></button></div></form></dialog>
+
+  <dialog id="wasteDialog">
+    <div class="dialog-card">
+      <div class="section-heading"><div><p class="eyebrow">Thrown away</p><h3>Wasted spending</h3></div><button type="button" class="icon-button close-button" data-close="wasteDialog">×</button></div>
+      <p class="muted">Deleted medicines stay logged here, even though the record itself is gone — so you can see what got tossed and roughly what it cost.</p>
+      <div id="wasteSummary" class="waste-summary"></div>
+      <div id="wasteList"></div>
+    </div>
+  </dialog>
 
   <dialog id="cabinetDialog">
     <div class="dialog-card">
