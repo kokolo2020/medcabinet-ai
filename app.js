@@ -282,7 +282,7 @@ async function handlePhotoSelected(e){
   fillFormFromScan(data);
   showPhotoPreview(dataUrl);
   showToast(data.expiry_date?'Scanned — check the details and save':'Scanned — no expiry date found');
-  if(confirm(data.expiry_date?'Got the details. Take a close-up photo of the expiry date too, to double-check it?':"Couldn't find an expiry date on that photo. Take a close-up of just the date now?")){
+  if(!data.expiry_date&&confirm("Couldn't find an expiry date on that photo. Take a close-up of just the date now?")){
    $('photoInputExpiry').click();
   }
  }catch(err){
