@@ -65,7 +65,7 @@ h3{font-family:Fraunces,serif;font-size:1.18rem;font-weight:600;margin-bottom:0;
 .action-grid button:hover{border-color:var(--mint);box-shadow:var(--shadow-sm)}
 .action-grid span{display:block;color:var(--emerald);font-size:1.5rem;margin-bottom:11px}
 
-.medicine-row{display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+.medicine-row{display:grid;grid-template-columns:auto 1fr auto auto auto auto;align-items:center;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
 .medicine-thumb{width:47px;height:47px;border-radius:14px;background:var(--mint-soft);color:var(--emerald);display:grid;place-items:center;font-family:Fraunces,serif;font-weight:600;font-size:1.05rem}
 .orange-thumb{background:var(--amber-soft);color:var(--amber)}
 .medicine-row strong,.medicine-row small{display:block}
@@ -76,6 +76,8 @@ h3{font-family:Fraunces,serif;font-size:1.18rem;font-weight:600;margin-bottom:0;
 .amber-status{background:var(--coral-soft);color:var(--coral)}
 .delete-btn{border:0;background:none;color:#b9c2bc;font-size:1.02rem;padding:6px;cursor:pointer;line-height:1;transition:.15s color}
 .delete-btn:active{color:var(--coral)}
+.edit-btn{border:0;background:none;color:#b9c2bc;font-size:.98rem;padding:6px;cursor:pointer;line-height:1;transition:.15s color}
+.edit-btn:active{color:var(--emerald)}
 .fav-btn{border:0;background:none;color:#c7cfc9;font-size:1.05rem;padding:6px;cursor:pointer;line-height:1;transition:.15s color,.15s transform}
 .fav-btn.is-fav{color:var(--amber)}
 .fav-btn:active{transform:scale(.85)}

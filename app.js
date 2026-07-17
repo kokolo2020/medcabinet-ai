@@ -28,6 +28,8 @@ let currentItems=[];
 let favoriteRows=[];
 let homePage=1;
 const PAGE_SIZE=10;
+let editingId=null;
+let editingPhotoUrl=null;
 
 function favoriteMedicineIds(){return new Set(favoriteRows.filter(f=>f.medicine_id).map(f=>f.medicine_id))}
 
@@ -36,7 +38,7 @@ function medicineRowHtml(m,favIds){
  const isFav=favIds.has(m.id);
  const runOut=estimateRunOutDate(m);
  const subtext=[esc(m.category||m.dosage_form||'Medicine'),m.expiry_date?'Expires '+esc(m.expiry_date):'No expiry date',runOut?'~runs out '+esc(runOut):''].filter(Boolean).join(' · ');
- return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${subtext}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
+ return `<div class="medicine-row" data-id="${esc(m.id)}">${thumb}<div><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${subtext}</small></div><span class="status ${expiryStatus(m.expiry_date)==='Expired'?'amber-status':'green-status'}">${expiryStatus(m.expiry_date)||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'★':'☆'}</button><button type="button" class="edit-btn" data-edit-id="${esc(m.id)}" aria-label="Edit ${esc(m.brand_name||'medicine')}">✎</button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}">🗑</button></div>`;
 }
 
 function renderMedicineList(){
@@ -112,6 +114,42 @@ function resetPhotoPreview(){pendingPhotoFile=null;$('photoPreviewWrap').hidden=
 function showPhotoPreview(dataUrl){$('photoPreview').src=dataUrl;$('photoPreviewWrap').hidden=false;$('scanPhotoOptions').hidden=true}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 function toggleDosageFields(){const on=!$('storageOnly').checked;$('dosageAmountLabel').hidden=!on;$('dosageFrequencyLabel').hidden=!on}
+
+function resetEditState(){editingId=null;editingPhotoUrl=null;$('dialogEyebrow').textContent='New inventory item';$('dialogTitle').textContent='Add medicine';$('saveMedicineBtn').textContent='Save medicine'}
+
+function editMedicine(id){
+ const m=currentItems.find(i=>i.id===id)||expiredItems.find(i=>i.id===id);
+ if(!m)return;
+ $('medicineForm').reset();
+ editingId=id;
+ editingPhotoUrl=m.photo_url||null;
+ $('brandName').value=m.brand_name||'';
+ $('manufacturer').value=m.manufacturer||'';
+ $('strength').value=m.strength||'';
+ if(m.dosage_form&&[...$('dosageForm').options].some(o=>o.value===m.dosage_form))$('dosageForm').value=m.dosage_form;
+ $('boxes').value=1;
+ $('qtyPerBox').value=m.quantity||1;
+ $('storageOnly').checked=!!m.is_storage_only;
+ $('dosageAmount').value=m.dosage_amount||'';
+ if(m.dosage_frequency)$('dosageFrequency').value=m.dosage_frequency;
+ toggleDosageFields();
+ $('expiryDate').value=m.expiry_date||'';
+ if(m.category&&[...$('category').options].some(o=>o.value===m.category))$('category').value=m.category;
+ let notes=m.notes||'',location='';
+ const locMatch=notes.match(/(^|\n)Location: (.+)$/);
+ if(locMatch){location=locMatch[2];notes=notes.replace(locMatch[0],'').trim()}
+ $('storageLocation').value=location;
+ $('purchasePrice').value=m.purchase_price??'';
+ $('purchaseStore').value=m.purchase_store||'';
+ $('barcode').value=m.barcode||'';
+ $('notes').value=notes;
+ pendingPhotoFile=null;
+ if(m.photo_url)showPhotoPreview(m.photo_url);else resetPhotoPreview();
+ $('dialogEyebrow').textContent='Editing';
+ $('dialogTitle').textContent='Edit medicine';
+ $('saveMedicineBtn').textContent='Update medicine';
+ openAdd();
+}
 
 function fillFormFromScan(d={}){
  $('brandName').value=d.brand_name||'';
@@ -189,19 +227,25 @@ async function deleteMedicine(id){
 
 async function saveMedicine(e){
  e.preventDefault();
- const btn=$('saveMedicineBtn');btn.disabled=true;btn.textContent='Saving…';
+ const isEdit=!!editingId;
+ const btn=$('saveMedicineBtn');btn.disabled=true;btn.textContent=isEdit?'Updating…':'Saving…';
  const location=$('storageLocation').value.trim();const notes=$('notes').value.trim();
  try{
-  let photo_url=null;
+  let photo_url=isEdit?editingPhotoUrl:null;
   if(pendingPhotoFile){btn.textContent='Uploading photo…';photo_url=await uploadPhoto(pendingPhotoFile)}
   const boxes=Number($('boxes').value||0),qtyPerBox=Number($('qtyPerBox').value||0);
   const isStorageOnly=$('storageOnly').checked;
   const payload={brand_name:$('brandName').value.trim(),manufacturer:$('manufacturer').value.trim()||null,strength:$('strength').value.trim()||null,dosage_form:$('dosageForm').value||null,quantity:boxes*qtyPerBox,is_storage_only:isStorageOnly,dosage_amount:isStorageOnly?null:($('dosageAmount').value?Number($('dosageAmount').value):null),dosage_frequency:isStorageOnly?null:$('dosageFrequency').value,expiry_date:$('expiryDate').value||null,category:$('category').value||null,purchase_price:$('purchasePrice').value?Number($('purchasePrice').value):null,currency:currentCurrency(),purchase_store:$('purchaseStore').value.trim()||null,barcode:$('barcode').value.trim()||null,photo_url,notes:[notes,location?`Location: ${location}`:''].filter(Boolean).join('\n')||null};
-  btn.textContent='Saving…';
-  const {error}=await sb.from('medicines').insert(payload);
-  if(error)throw new Error(error.message||error.hint||'Save failed');
-  $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();toggleDosageFields();closeDialog('addMedicineDialog');showToast('Medicine saved');await loadMedicines();
- }catch(e){console.error(e);showToast(e.message||'Save failed')}finally{btn.disabled=false;btn.textContent='Save medicine'}
+  btn.textContent=isEdit?'Updating…':'Saving…';
+  if(isEdit){
+   const {error}=await sb.from('medicines').update(payload).eq('id',editingId);
+   if(error)throw new Error(error.message||error.hint||'Update failed');
+  }else{
+   const {error}=await sb.from('medicines').insert(payload);
+   if(error)throw new Error(error.message||error.hint||'Save failed');
+  }
+  $('medicineForm').reset();$('boxes').value=1;$('qtyPerBox').value=1;resetPhotoPreview();toggleDosageFields();resetEditState();closeDialog('addMedicineDialog');showToast(isEdit?'Medicine updated':'Medicine saved');await loadMedicines();
+ }catch(e){console.error(e);showToast(e.message||'Save failed')}finally{btn.disabled=false;btn.textContent=editingId?'Update medicine':'Save medicine'}
 }
 
 setGreeting();const saved=currentCurrency();$('currencySelect').value=saved;applyCurrency(saved);
@@ -212,10 +256,10 @@ $('navCabinet').addEventListener('click',()=>{$('cabinetCategoryFilter').value='
 $('cabinetCategoryFilter').addEventListener('change',renderCabinetList);
 $('medicinePagination').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b){homePage=Number(b.dataset.page);renderMedicineList();$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'})}});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
-document.querySelector('[data-action="add"]').addEventListener('click',()=>{$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
+document.querySelector('[data-action="add"]').addEventListener('click',()=>{resetEditState();$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
 document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
 document.querySelectorAll('[data-action]:not([data-action="add"])').forEach(b=>b.addEventListener('click',()=>$('scanDialog').showModal()));
-document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{closeDialog(b.dataset.close);if(b.dataset.close==='addMedicineDialog'){$('medicineForm').reset();resetPhotoPreview();toggleDosageFields()}}));
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>{closeDialog(b.dataset.close);if(b.dataset.close==='addMedicineDialog'){resetEditState();$('medicineForm').reset();resetPhotoPreview();toggleDosageFields()}}));
 $('storageOnly').addEventListener('change',toggleDosageFields);
 toggleDosageFields();
 $('photoInputCamera').addEventListener('change',handlePhotoSelected);
@@ -226,17 +270,20 @@ $('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click())
 $('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEventListener('click',loadMedicines);
 $('medicineList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
  const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
 });
 $('expiredCard').addEventListener('click',()=>{renderExpiredList();$('expiredDialog').showModal()});
 $('expiredList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
  const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
 });
 $('favoritesBtn').addEventListener('click',()=>{renderFavoritesList();$('favoritesDialog').showModal()});
 $('favoritesList').addEventListener('click',e=>{const b=e.target.closest('[data-unfav-id]');if(b)removeFavorite(b.dataset.unfavId)});
 $('cabinetList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
+ const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
  const fav=e.target.closest('[data-fav-toggle]');if(fav)toggleFavorite(fav.dataset.favToggle);
 });
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
