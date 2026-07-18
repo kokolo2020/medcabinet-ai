@@ -38,7 +38,7 @@ h3{font-family:Fraunces,serif;font-size:1.18rem;font-weight:600;margin-bottom:0;
 .score-ring span{position:relative;z-index:1;font-family:Fraunces,serif;font-size:1.4rem;font-weight:600;color:var(--pine)}
 
 .secondary-button,.primary-button{border:0;border-radius:14px;padding:13px 17px;font-weight:700;cursor:pointer;transition:.15s transform,.15s box-shadow;letter-spacing:-.005em}
-.secondary-button{background:var(--mint-soft);color:var(--emerald)}
+.secondary-button{background:var(--mint-soft);color:var(--emerald);width:100%;display:block;margin-top:10px}
 .secondary-button:active,.primary-button:active{transform:scale(.98)}
 .primary-button{background:linear-gradient(160deg,var(--emerald),var(--pine));color:#fff;width:100%;box-shadow:0 12px 26px rgba(18,70,59,.28)}
 .primary-button:disabled{opacity:.6}
