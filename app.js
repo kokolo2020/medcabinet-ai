@@ -38,7 +38,7 @@ let editingPriceEstimated=false;
 function favoriteMedicineIds(){return new Set(favoriteRows.filter(f=>f.medicine_id).map(f=>f.medicine_id))}
 
 function medicineRowHtml(m,favIds){
- const thumb=m.photo_url?`<img class="medicine-thumb-img" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
+ const thumb=m.photo_url?`<img class="medicine-thumb-img" loading="lazy" src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="medicine-thumb">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
  const isFav=favIds.has(m.id);
  const runOut=estimateRunOutDate(m);
  const status=expiryStatus(m.expiry_date);
@@ -244,10 +244,11 @@ function renderCabinetList(){
   (groups[cat]=groups[cat]||[]).push(m);
  });
  const catNames=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+ const autoOpen=!!(q||cabinetActiveCategory||catNames.length===1);
  $('cabinetList').innerHTML=catNames.length?catNames.map(cat=>{
   const items=groups[cat];
   const style=CATEGORY_STYLES[cat]||CATEGORY_STYLES.Other;
-  return `<details class="category-group" open style="border-left-color:${style.color}"><summary class="category-group-header"><span class="category-group-title"><span class="category-icon-chip" style="background:${style.bg};color:${style.color}">${style.icon}</span>${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="category-group-items">${items.map(m=>medicineRowHtml(m,favIds)).join('')}</div></details>`;
+  return `<details class="category-group" ${autoOpen?'open':''} style="border-left-color:${style.color}"><summary class="category-group-header"><span class="category-group-title"><span class="category-icon-chip" style="background:${style.bg};color:${style.color}">${style.icon}</span>${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="category-group-items">${items.map(m=>medicineRowHtml(m,favIds)).join('')}</div></details>`;
  }).join(''):`<p class="empty-state">${q?'No matches for that search.':'No medicines in this category.'}</p>`;
 }
 
@@ -263,7 +264,7 @@ function renderExpiringSoonList(){
 
 function renderFavoritesList(){
  $('favoritesList').innerHTML=favoriteRows.length?favoriteRows.map(f=>{
-  const thumb=f.photo_url?`<img class="medicine-thumb-img" src="${esc(f.photo_url)}" alt="${esc(f.brand_name||'')}">`:`<div class="medicine-thumb">${esc((f.brand_name||'?')[0].toUpperCase())}</div>`;
+  const thumb=f.photo_url?`<img class="medicine-thumb-img" loading="lazy" src="${esc(f.photo_url)}" alt="${esc(f.brand_name||'')}">`:`<div class="medicine-thumb">${esc((f.brand_name||'?')[0].toUpperCase())}</div>`;
   return `<div class="medicine-row" data-id="${esc(f.id)}">${thumb}<div><strong>${esc(f.brand_name||'Unnamed medicine')} ${esc(f.strength||'')}</strong><small>${esc(f.category||f.dosage_form||'Medicine')}</small></div><span></span><button type="button" class="delete-btn" data-unfav-id="${esc(f.id)}" aria-label="Remove ${esc(f.brand_name||'medicine')} from favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5h5v2M6.5 7l1 13h9l1-13"/><path d="M10 11v5M14 11v5"/></svg></button></div>`;
  }).join(''):'<p class="empty-state">No favorites yet. Tap the star on any medicine to save it here.</p>';
 }
@@ -303,7 +304,7 @@ function renderWasteList(){
  $('wasteList').innerHTML=rows.length?rows.map(r=>{
   const priceText=r.purchase_price?`${sym}${Number(r.purchase_price).toLocaleString()}${r.price_estimated?' (estimated)':''}`:'No price recorded';
   const deletedDate=(r.deleted_at||'').slice(0,10);
-  const thumb=r.photo_url?`<img class="medicine-thumb-img" src="${esc(r.photo_url)}" alt="${esc(r.brand_name||'')}">`:`<div class="medicine-thumb">${esc((r.brand_name||'?')[0].toUpperCase())}</div>`;
+  const thumb=r.photo_url?`<img class="medicine-thumb-img" loading="lazy" src="${esc(r.photo_url)}" alt="${esc(r.brand_name||'')}">`:`<div class="medicine-thumb">${esc((r.brand_name||'?')[0].toUpperCase())}</div>`;
   return `<div class="medicine-row"><div class="row-main">${thumb}<div class="row-text"><strong>${esc(r.brand_name||'Unnamed medicine')}</strong><small>${esc(priceText)} · deleted ${esc(deletedDate)}${r.was_expired?' · was expired':''}</small></div></div></div>`;
  }).join(''):(wasteRows.length?'<p class="empty-state">No matches.</p>':'<p class="empty-state">Nothing deleted yet.</p>');
 }
@@ -515,9 +516,26 @@ async function handleExpiryPhotoSelected(e){
  }finally{expiryScanInProgress=false}
 }
 
+async function compressImage(file,maxDim=1000,quality=0.72){
+ try{
+  const bitmap=await createImageBitmap(file);
+  let{width,height}=bitmap;
+  if(width>maxDim||height>maxDim){
+   const scale=maxDim/Math.max(width,height);
+   width=Math.round(width*scale);height=Math.round(height*scale);
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  canvas.getContext('2d').drawImage(bitmap,0,0,width,height);
+  const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',quality));
+  return blob||file;
+ }catch(e){console.error('Image compression failed, uploading original',e);return file}
+}
+
 async function uploadPhoto(file){
- const path=`${crypto.randomUUID()}-${(file.name||'photo.jpg').replace(/[^a-zA-Z0-9.]/g,'_')}`;
- const {error}=await sb.storage.from('medicine-photos').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+ const compressed=await compressImage(file);
+ const path=`${crypto.randomUUID()}.jpg`;
+ const {error}=await sb.storage.from('medicine-photos').upload(path,compressed,{contentType:'image/jpeg',upsert:false});
  if(error)throw new Error(error.message||'Photo upload failed');
  const {data}=sb.storage.from('medicine-photos').getPublicUrl(path);
  return data.publicUrl;
