@@ -1,37 +1,7 @@
 const symbols={THB:'฿',USD:'$',EUR:'€',GBP:'£',SGD:'S$',KHR:'៛',JPY:'¥'};
 const cfg=window.MEDCABINET_CONFIG;
-const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true}});
+const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
 
-let pendingLoginEmail='';
-
-function showLoginScreen(){$('loginScreen').hidden=false}
-function hideLoginScreen(){$('loginScreen').hidden=true}
-
-async function sendOtp(){
- const email=$('loginEmail').value.trim();
- if(!email){showToast('Enter your email first');return}
- const btn=$('sendOtpBtn');const original=btn.textContent;
- btn.disabled=true;btn.textContent='Sending…';
- try{
-  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin}});
-  if(error)throw new Error(error.message);
-  pendingLoginEmail=email;
-  $('loginSubtitle').textContent=`We sent a sign-in link to ${email}`;
-  $('loginStepEmail').hidden=true;
-  $('loginStepCode').hidden=false;
- }catch(e){console.error(e);showToast(e.message||'Could not send link')}
- finally{btn.disabled=false;btn.textContent=original}
-}
-
-function clearAuthParamsFromUrl(){
- if(location.hash&&(location.hash.includes('access_token')||location.hash.includes('error')))history.replaceState(null,'',location.pathname+location.search);
-}
-async function enterApp(session){
- clearAuthParamsFromUrl();
- $('profileAccountLine').textContent=`Signed in as ${session.user.email}`;
- hideLoginScreen();
- await loadMedicines();
-}
 const $=id=>document.getElementById(id);
 const toast=document.createElement('div');toast.className='toast';document.body.appendChild(toast);
 function showToast(message){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2500)}
@@ -716,13 +686,5 @@ $('detailEditBtn').addEventListener('click',()=>{const id=$('detailDialog').data
 $('detailFavBtn').addEventListener('click',async()=>{const id=$('detailDialog').dataset.id;await toggleFavorite(id);const isFav=favoriteMedicineIds().has(id);$('detailFavBtn').textContent=isFav?'★ Favorited':'☆ Favorite'});
 $('detailDeleteBtn').addEventListener('click',async()=>{const id=$('detailDialog').dataset.id;await deleteMedicine(id);closeDialog('detailDialog')});
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
-$('sendOtpBtn').addEventListener('click',sendOtp);
-$('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')sendOtp()});
-$('resendOtpBtn').addEventListener('click',async()=>{$('loginEmail').value=pendingLoginEmail;await sendOtp()});
-$('changeEmailBtn').addEventListener('click',()=>{$('loginStepCode').hidden=true;$('loginStepEmail').hidden=false;$('loginSubtitle').textContent="Enter your email — we'll send you a sign-in link."});
-$('signOutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
-sb.auth.onAuthStateChange((event,session)=>{
- if(event==='INITIAL_SESSION'){if(session)enterApp(session);else showLoginScreen()}
- if(event==='SIGNED_OUT')showLoginScreen();
- if(event==='SIGNED_IN'&&session)enterApp(session);
-});
+
+loadMedicines();
