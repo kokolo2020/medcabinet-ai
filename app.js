@@ -119,42 +119,44 @@ async function generatePdfReport(){
   currentItems.forEach(m=>{(groups[m.category||'Uncategorized']=groups[m.category||'Uncategorized']||[]).push(m)});
   const catNames=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
 
-  const colX={photo:marginX,name:marginX+42,expiry:marginX+195,location:marginX+280,updated:marginX+400};
-  const rowH=36;
+  const colX={photo:marginX,name:marginX+30,expiry:marginX+195,location:marginX+280,updated:marginX+400};
+  const rowH=24;
+  const photoSize=18;
 
   function ensureSpace(needed){
    if(y+needed>pageHeight-40){doc.addPage();y=50}
   }
 
   catNames.forEach(cat=>{
-   ensureSpace(56);
-   doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(18,70,59);
+   ensureSpace(46);
+   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(18,70,59);
    doc.text(cat,marginX,y);
-   y+=6;
+   y+=5;
    doc.setDrawColor(220,220,210);doc.line(marginX,y,pageWidth-marginX,y);
-   y+=14;
-   doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(140,140,140);
+   y+=11;
+   doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(140,140,140);
    doc.text('NAME',colX.name,y);doc.text('EXPIRY',colX.expiry,y);doc.text('LOCATION',colX.location,y);doc.text('LAST UPDATED',colX.updated,y);
-   y+=10;
+   y+=8;
    groups[cat].forEach(m=>{
     ensureSpace(rowH);
     const imgData=imageCache[m.id];
+    const textY=y+photoSize/2+3;
     if(imgData){
-     try{doc.addImage(imgData,colX.photo,y,28,28,undefined,'FAST')}catch(e){}
+     try{doc.addImage(imgData,colX.photo,y,photoSize,photoSize,undefined,'FAST')}catch(e){}
     }else{
-     doc.setFillColor(231,244,238);doc.roundedRect(colX.photo,y,28,28,4,4,'F');
-     doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(31,111,92);
-     doc.text((m.brand_name||'?')[0].toUpperCase(),colX.photo+14,y+18,{align:'center'});
+     doc.setFillColor(231,244,238);doc.roundedRect(colX.photo,y,photoSize,photoSize,3,3,'F');
+     doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(31,111,92);
+     doc.text((m.brand_name||'?')[0].toUpperCase(),colX.photo+photoSize/2,y+photoSize/2+3,{align:'center'});
     }
-    doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(20,30,28);
-    doc.text(truncateText(`${m.brand_name||'Unnamed'}${m.strength?' '+m.strength:''}`,32),colX.name,y+17);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(60,70,66);
-    doc.text(m.expiry_date||'—',colX.expiry,y+17);
-    doc.text(truncateText(parseLocation(m.notes)||'—',24),colX.location,y+17);
-    doc.text((m.updated_at||m.created_at||'').slice(0,10)||'—',colX.updated,y+17);
+    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(20,30,28);
+    doc.text(truncateText(`${m.brand_name||'Unnamed'}${m.strength?' '+m.strength:''}`,30),colX.name,textY);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(60,70,66);
+    doc.text(m.expiry_date||'—',colX.expiry,textY);
+    doc.text(truncateText(parseLocation(m.notes)||'—',24),colX.location,textY);
+    doc.text((m.updated_at||m.created_at||'').slice(0,10)||'—',colX.updated,textY);
     y+=rowH;
    });
-   y+=8;
+   y+=6;
   });
 
   doc.save(`medcabinet-inventory-${new Date().toISOString().slice(0,10)}.pdf`);
