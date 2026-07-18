@@ -78,6 +78,90 @@ function shelfCardHtml(m){
  return `<button type="button" class="shelf-card" data-id="${esc(m.id)}"><div class="shelf-card-photo">${thumb}</div><div class="shelf-card-info"><strong>${esc(m.brand_name||'Unnamed')}</strong>${m.strength?`<small>${esc(m.strength)}</small>`:''}${status?`<span class="status ${statusClass} shelf-status">${esc(status)}</span>`:''}</div></button>`;
 }
 
+function truncateText(s,n){s=String(s);return s.length>n?s.slice(0,n-1)+'…':s}
+
+function parseLocation(notes){
+ const m=(notes||'').match(/(^|\n)Location: (.+)$/);
+ return m?m[2]:'';
+}
+
+async function generatePdfReport(){
+ if(!window.jspdf){showToast('PDF library still loading — try again in a second');return}
+ const btn=$('cabinetPdfBtn');
+ const originalText=btn.textContent;
+ btn.disabled=true;btn.textContent='Preparing PDF…';
+ try{
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const marginX=40;
+  const pageHeight=doc.internal.pageSize.getHeight();
+  const pageWidth=doc.internal.pageSize.getWidth();
+  let y=52;
+
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(18,70,59);
+  doc.text('MedCabinet AI — Full Inventory',marginX,y);
+  y+=18;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120);
+  doc.text(`Generated ${new Date().toLocaleDateString()} · ${currentItems.length} medicines`,marginX,y);
+  y+=26;
+
+  const imageCache={};
+  await Promise.all(currentItems.filter(m=>m.photo_url).map(async m=>{
+   try{
+    const res=await fetch(m.photo_url);
+    const blob=await res.blob();
+    const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob)});
+    imageCache[m.id]=dataUrl;
+   }catch(e){console.error('PDF image fetch failed for',m.brand_name,e)}
+  }));
+
+  const groups={};
+  currentItems.forEach(m=>{(groups[m.category||'Uncategorized']=groups[m.category||'Uncategorized']||[]).push(m)});
+  const catNames=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+
+  const colX={photo:marginX,name:marginX+42,expiry:marginX+195,location:marginX+280,updated:marginX+400};
+  const rowH=36;
+
+  function ensureSpace(needed){
+   if(y+needed>pageHeight-40){doc.addPage();y=50}
+  }
+
+  catNames.forEach(cat=>{
+   ensureSpace(56);
+   doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(18,70,59);
+   doc.text(cat,marginX,y);
+   y+=6;
+   doc.setDrawColor(220,220,210);doc.line(marginX,y,pageWidth-marginX,y);
+   y+=14;
+   doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(140,140,140);
+   doc.text('NAME',colX.name,y);doc.text('EXPIRY',colX.expiry,y);doc.text('LOCATION',colX.location,y);doc.text('LAST UPDATED',colX.updated,y);
+   y+=10;
+   groups[cat].forEach(m=>{
+    ensureSpace(rowH);
+    const imgData=imageCache[m.id];
+    if(imgData){
+     try{doc.addImage(imgData,colX.photo,y,28,28,undefined,'FAST')}catch(e){}
+    }else{
+     doc.setFillColor(231,244,238);doc.roundedRect(colX.photo,y,28,28,4,4,'F');
+     doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(31,111,92);
+     doc.text((m.brand_name||'?')[0].toUpperCase(),colX.photo+14,y+18,{align:'center'});
+    }
+    doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(20,30,28);
+    doc.text(truncateText(`${m.brand_name||'Unnamed'}${m.strength?' '+m.strength:''}`,32),colX.name,y+17);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(60,70,66);
+    doc.text(m.expiry_date||'—',colX.expiry,y+17);
+    doc.text(truncateText(parseLocation(m.notes)||'—',24),colX.location,y+17);
+    doc.text((m.updated_at||m.created_at||'').slice(0,10)||'—',colX.updated,y+17);
+    y+=rowH;
+   });
+   y+=8;
+  });
+
+  doc.save(`medcabinet-inventory-${new Date().toISOString().slice(0,10)}.pdf`);
+ }catch(e){console.error(e);showToast('Could not generate PDF: '+e.message)}
+ finally{btn.disabled=false;btn.textContent=originalText}
+}
+
 function renderCabinetList(){
  const favIds=favoriteMedicineIds();
  const allCats=[...new Set(currentItems.map(m=>m.category||'Uncategorized'))].sort((a,b)=>a.localeCompare(b));
@@ -406,7 +490,7 @@ async function saveMedicine(e){
   }
   btn.textContent=isEdit?'Updating…':'Saving…';
   if(isEdit){
-   const {error}=await sb.from('medicines').update(payload).eq('id',editingId);
+   const {error}=await sb.from('medicines').update({...payload,updated_at:new Date().toISOString()}).eq('id',editingId);
    if(error)throw new Error(error.message||error.hint||'Update failed');
   }else{
    const {error}=await sb.from('medicines').insert(payload);
@@ -422,6 +506,7 @@ $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySele
 $('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smooth'})});
 $('navProfile').addEventListener('click',()=>{$('profileDialog').showModal()});
 $('navCabinet').addEventListener('click',()=>{cabinetActiveCategory='';renderCabinetList();$('cabinetDialog').showModal()});
+$('cabinetPdfBtn').addEventListener('click',generatePdfReport);
 $('cabinetChips').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cabinetActiveCategory=b.dataset.cat;renderCabinetList()});
 $('medicinePagination').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b){homePage=Number(b.dataset.page);renderMedicineList();$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'})}});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());

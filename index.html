@@ -146,6 +146,7 @@
     <div class="dialog-card">
       <div class="section-heading"><div><p class="eyebrow">All medicines</p><h3>Cabinet</h3></div><button type="button" class="icon-button close-button" data-close="cabinetDialog">×</button></div>
       <div class="chip-row" id="cabinetChips"></div>
+      <button type="button" class="text-button pdf-report-btn" id="cabinetPdfBtn">📄 Download PDF report</button>
       <div id="cabinetList"></div>
     </div>
   </dialog>
@@ -207,6 +208,7 @@
   <input type="file" id="photoInputExpiry" accept="image/*" capture="environment" hidden>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="config.js"></script><script src="app.js"></script>
 </body>
 </html>
