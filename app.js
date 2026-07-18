@@ -13,28 +13,13 @@ async function sendOtp(){
  const btn=$('sendOtpBtn');const original=btn.textContent;
  btn.disabled=true;btn.textContent='Sending…';
  try{
-  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin}});
   if(error)throw new Error(error.message);
   pendingLoginEmail=email;
-  $('loginSubtitle').textContent=`We sent a 6-digit code to ${email}`;
+  $('loginSubtitle').textContent=`We sent a sign-in link to ${email}`;
   $('loginStepEmail').hidden=true;
   $('loginStepCode').hidden=false;
-  $('loginCode').focus();
- }catch(e){console.error(e);showToast(e.message||'Could not send code')}
- finally{btn.disabled=false;btn.textContent=original}
-}
-
-async function verifyOtp(){
- const token=$('loginCode').value.trim();
- if(token.length!==6){showToast('Enter the 6-digit code');return}
- const btn=$('verifyOtpBtn');const original=btn.textContent;
- btn.disabled=true;btn.textContent='Verifying…';
- try{
-  const {error}=await sb.auth.verifyOtp({email:pendingLoginEmail,token,type:'email'});
-  if(error)throw new Error(error.message);
-  hideLoginScreen();
-  await initApp();
- }catch(e){console.error(e);showToast(e.message||'Invalid or expired code')}
+ }catch(e){console.error(e);showToast(e.message||'Could not send link')}
  finally{btn.disabled=false;btn.textContent=original}
 }
 
@@ -730,11 +715,12 @@ $('detailDeleteBtn').addEventListener('click',async()=>{const id=$('detailDialog
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
 $('sendOtpBtn').addEventListener('click',sendOtp);
 $('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')sendOtp()});
-$('verifyOtpBtn').addEventListener('click',verifyOtp);
-$('loginCode').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOtp()});
 $('resendOtpBtn').addEventListener('click',async()=>{$('loginEmail').value=pendingLoginEmail;await sendOtp()});
-$('changeEmailBtn').addEventListener('click',()=>{$('loginStepCode').hidden=true;$('loginStepEmail').hidden=false;$('loginCode').value='';$('loginSubtitle').textContent="Enter your email — we'll send a 6-digit code, no password needed."});
+$('changeEmailBtn').addEventListener('click',()=>{$('loginStepCode').hidden=true;$('loginStepEmail').hidden=false;$('loginSubtitle').textContent="Enter your email — we'll send you a sign-in link."});
 $('signOutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
-sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){showLoginScreen()}});
+sb.auth.onAuthStateChange((event)=>{
+ if(event==='SIGNED_OUT')showLoginScreen();
+ if(event==='SIGNED_IN'){hideLoginScreen();initApp()}
+});
 
 initApp();
