@@ -47,17 +47,19 @@ function medicineRowHtml(m,favIds){
  return `<div class="medicine-row medicine-row-rich" data-id="${esc(m.id)}"><div class="row-main">${thumb}<div class="row-text"><strong>${esc(m.brand_name||'Unnamed medicine')} ${esc(m.strength||'')}</strong><small>${subtext}</small></div></div><div class="row-actions"><span class="status ${status==='Expired'?'amber-status':status==='Expires soon'?'soon-status':'green-status'}">${status||esc((m.quantity||0)+' in stock')}</span><button type="button" class="fav-btn ${isFav?'is-fav':''}" data-fav-toggle="${esc(m.id)}" aria-label="Favorite">${isFav?'<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>'}</button><button type="button" class="edit-btn" data-edit-id="${esc(m.id)}" aria-label="Edit ${esc(m.brand_name||'medicine')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3.5l3.5 3.5L8 19.5 4 20l.5-4z"/></svg></button><button type="button" class="delete-btn" data-delete-id="${esc(m.id)}" aria-label="Delete ${esc(m.brand_name||'medicine')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5h5v2M6.5 7l1 13h9l1-13"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>`;
 }
 
-function renderMedicineList(){
- const favIds=favoriteMedicineIds();
- const totalPages=Math.max(1,Math.ceil(currentItems.length/PAGE_SIZE));
- if(homePage>totalPages)homePage=totalPages;
- const start=(homePage-1)*PAGE_SIZE;
- const pageItems=currentItems.slice(start,start+PAGE_SIZE);
- $('medicineList').innerHTML=pageItems.length?pageItems.map(m=>medicineRowHtml(m,favIds)).join(''):'<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';
- $('medicinePagination').innerHTML=totalPages>1?Array.from({length:totalPages},(_,i)=>i+1).map(p=>`<button type="button" class="page-btn ${p===homePage?'active':''}" data-page="${p}">${p}</button>`).join(''):'';
+function renderCategoryChart(){
+ if(!currentItems.length){$('categoryChart').innerHTML='<p class="empty-state">No medicines added yet. Tap <strong>Add medicine</strong> to create your first record.</p>';return}
+ const counts={};
+ currentItems.forEach(m=>{const c=m.category||'Uncategorized';counts[c]=(counts[c]||0)+1});
+ const max=Math.max(...Object.values(counts));
+ const rows=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).map(cat=>{
+  const style=CATEGORY_STYLES[cat]||CATEGORY_STYLES.Other;
+  const n=counts[cat];
+  const pct=Math.round((n/max)*100);
+  return `<div class="chart-row"><span class="chart-icon" style="background:${style.bg};color:${style.color}">${style.icon}</span><span class="chart-label">${esc(cat)}</span><span class="chart-track"><span class="chart-bar" style="width:${pct}%;background:${style.color}"></span></span><span class="chart-count">${n}</span></div>`;
+ }).join('');
+ $('categoryChart').innerHTML=rows;
 }
-
-let cabinetActiveCategory='';
 const CATEGORY_STYLES={
  'Pain relief':{icon:'💊',color:'var(--coral)',bg:'var(--coral-soft)'},
  'Cold & flu':{icon:'🤧',color:'var(--sky)',bg:'var(--sky-soft)'},
@@ -265,7 +267,7 @@ async function toggleFavorite(medicineId){
    showToast('Added to favorites');
   }
   await loadFavorites();
-  renderMedicineList();
+  renderCategoryChart();
   if($('expiredDialog').open)renderExpiredList();
   if($('expiringSoonDialog').open)renderExpiringSoonList();
   if($('favoritesDialog').open)renderFavoritesList();
@@ -279,7 +281,7 @@ async function removeFavorite(favId){
   if(error)throw new Error(error.message||'Could not remove favorite');
   await loadFavorites();
   renderFavoritesList();
-  renderMedicineList();
+  renderCategoryChart();
   if($('expiredDialog').open)renderExpiredList();
   if($('expiringSoonDialog').open)renderExpiringSoonList();
   if($('cabinetDialog').open)renderCabinetList();
@@ -480,7 +482,7 @@ async function loadMedicines(){
   $('expiredCount').textContent=expired;$('expiringSoon').textContent=soon;$('lowStock').textContent=low;
   const code=currentCurrency(),sym=symbols[code]||code+' ';$('reportValue').textContent=`${sym}${total.toLocaleString()}`;
   $('reportMedicineCount').textContent=items.length;$('reportExpiredCount').textContent=expired;$('reportExpiringCount').textContent=soon;
-  renderMedicineList();
+  renderCategoryChart();
   if($('expiredDialog').open)renderExpiredList();
   if($('expiringSoonDialog').open)renderExpiringSoonList();
   if($('favoritesDialog').open)renderFavoritesList();
@@ -551,7 +553,7 @@ $('navProfile').addEventListener('click',()=>{$('profileDialog').showModal()});
 $('navCabinet').addEventListener('click',()=>{cabinetActiveCategory='';renderCabinetList();$('cabinetDialog').showModal()});
 $('cabinetPdfBtn').addEventListener('click',generatePdfReport);
 $('cabinetChips').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cabinetActiveCategory=b.dataset.cat;renderCabinetList()});
-$('medicinePagination').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b){homePage=Number(b.dataset.page);renderMedicineList();$('cabinetSection').scrollIntoView({behavior:'smooth',block:'start'})}});
+$('breakdownCabinetLink').addEventListener('click',()=>{cabinetActiveCategory='';renderCabinetList();$('cabinetDialog').showModal()});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
 document.querySelector('[data-action="add"]').addEventListener('click',()=>{resetEditState();$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
 document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
@@ -595,13 +597,7 @@ $('expiryPromptSkipBtn').addEventListener('click',()=>{closeDialog('expiryPrompt
 $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());
 $('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
 $('retakePhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
-$('medicineForm').addEventListener('submit',saveMedicine);$('refreshBtn').addEventListener('click',loadMedicines);
-$('medicineList').addEventListener('click',e=>{
- const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
- const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
- const fav=e.target.closest('[data-fav-toggle]');if(fav){toggleFavorite(fav.dataset.favToggle);return}
- const row=e.target.closest('.medicine-row');if(row)openDetail(row.dataset.id);
-});
+$('medicineForm').addEventListener('submit',saveMedicine);
 $('expiringSoonCard').addEventListener('click',()=>{renderExpiringSoonList();$('expiringSoonDialog').showModal()});
 $('expiringSoonList').addEventListener('click',e=>{
  const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
