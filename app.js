@@ -23,10 +23,13 @@ async function sendOtp(){
  finally{btn.disabled=false;btn.textContent=original}
 }
 
-async function initApp(){
- const {data:{session}}=await sb.auth.getSession();
- if(!session){showLoginScreen();return}
+function clearAuthParamsFromUrl(){
+ if(location.hash&&(location.hash.includes('access_token')||location.hash.includes('error')))history.replaceState(null,'',location.pathname+location.search);
+}
+async function enterApp(session){
+ clearAuthParamsFromUrl();
  $('profileAccountLine').textContent=`Signed in as ${session.user.email}`;
+ hideLoginScreen();
  await loadMedicines();
 }
 const $=id=>document.getElementById(id);
@@ -718,9 +721,8 @@ $('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')sendOtp()});
 $('resendOtpBtn').addEventListener('click',async()=>{$('loginEmail').value=pendingLoginEmail;await sendOtp()});
 $('changeEmailBtn').addEventListener('click',()=>{$('loginStepCode').hidden=true;$('loginStepEmail').hidden=false;$('loginSubtitle').textContent="Enter your email — we'll send you a sign-in link."});
 $('signOutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
-sb.auth.onAuthStateChange((event)=>{
+sb.auth.onAuthStateChange((event,session)=>{
+ if(event==='INITIAL_SESSION'){if(session)enterApp(session);else showLoginScreen()}
  if(event==='SIGNED_OUT')showLoginScreen();
- if(event==='SIGNED_IN'){hideLoginScreen();initApp()}
+ if(event==='SIGNED_IN'&&session)enterApp(session);
 });
-
-initApp();
