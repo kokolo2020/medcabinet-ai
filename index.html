@@ -129,6 +129,7 @@
       </div>
       <button class="secondary-button" id="shareReportBtn">Share report</button>
       <button class="secondary-button" id="cabinetPdfBtn">📄 Download PDF inventory</button>
+      <button class="secondary-button" id="qrShareBtn">📱 Share PDF via QR code</button>
     </div>
   </dialog>
 
@@ -170,6 +171,16 @@
     <div class="dialog-card">
       <div class="section-heading"><div><p class="eyebrow">Needs attention</p><h3>Expired medicines</h3></div><button type="button" class="icon-button close-button" data-close="expiredDialog">×</button></div>
       <div id="expiredList"></div>
+    </div>
+  </dialog>
+
+  <dialog id="qrShareDialog">
+    <div class="dialog-card qr-share-card">
+      <div class="section-heading"><div><p class="eyebrow">Shareable link</p><h3>Scan to view PDF</h3></div><button type="button" class="icon-button close-button" data-close="qrShareDialog">×</button></div>
+      <div class="qr-image-wrap" id="qrImageWrap"></div>
+      <p class="muted qr-warning">⚠️ Anyone with this link or QR code can view your full medicine list. Don't share it publicly.</p>
+      <input type="text" id="qrShareUrl" class="cabinet-search" readonly>
+      <button type="button" class="secondary-button" id="qrCopyBtn">📋 Copy link</button>
     </div>
   </dialog>
 
@@ -220,6 +231,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="config.js"></script><script src="app.js"></script>
 </body>
 </html>

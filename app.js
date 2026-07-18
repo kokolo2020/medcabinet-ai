@@ -108,22 +108,18 @@ function parseLocation(notes){
  return m?m[2]:'';
 }
 
-async function generatePdfReport(){
- if(!window.jspdf){showToast('PDF library still loading — try again in a second');return}
- const btn=$('cabinetPdfBtn');
- const originalText=btn.textContent;
- btn.disabled=true;btn.textContent='Preparing PDF…';
- try{
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({unit:'pt',format:'a4'});
-  const marginX=40;
-  const pageHeight=doc.internal.pageSize.getHeight();
-  const pageWidth=doc.internal.pageSize.getWidth();
-  let y=52;
+async function buildInventoryPdf(){
+ if(!window.jspdf)throw new Error('PDF library still loading — try again in a second');
+ const {jsPDF}=window.jspdf;
+ const doc=new jsPDF({unit:'pt',format:'a4'});
+ const marginX=40;
+ const pageHeight=doc.internal.pageSize.getHeight();
+ const pageWidth=doc.internal.pageSize.getWidth();
+ let y=52;
 
-  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(18,70,59);
-  doc.text('MedCabinet AI — Full Inventory',marginX,y);
-  y+=18;
+ doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(18,70,59);
+ doc.text('MedCabinet AI — Full Inventory',marginX,y);
+ y+=18;
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120);
   doc.text(`Generated ${new Date().toLocaleDateString()} · ${currentItems.length} medicines`,marginX,y);
   y+=26;
@@ -160,7 +156,13 @@ async function generatePdfReport(){
    doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(140,140,140);
    doc.text('NAME',colX.name,y);doc.text('EXPIRY',colX.expiry,y);doc.text('LOCATION',colX.location,y);doc.text('LAST UPDATED',colX.updated,y);
    y+=8;
-   groups[cat].forEach(m=>{
+   const sortedItems=[...groups[cat]].sort((a,b)=>{
+    if(!a.expiry_date&&!b.expiry_date)return 0;
+    if(!a.expiry_date)return 1;
+    if(!b.expiry_date)return -1;
+    return a.expiry_date.localeCompare(b.expiry_date);
+   });
+   sortedItems.forEach(m=>{
     ensureSpace(rowH);
     const imgData=imageCache[m.id];
     const textY=y+photoSize/2+3;
@@ -189,10 +191,40 @@ async function generatePdfReport(){
     y+=rowH;
    });
    y+=6;
-  });
+ });
 
+ return doc;
+}
+
+async function generatePdfReport(){
+ const btn=$('cabinetPdfBtn');
+ const originalText=btn.textContent;
+ btn.disabled=true;btn.textContent='Preparing PDF…';
+ try{
+  const doc=await buildInventoryPdf();
   doc.save(`medcabinet-inventory-${new Date().toISOString().slice(0,10)}.pdf`);
  }catch(e){console.error(e);showToast('Could not generate PDF: '+e.message)}
+ finally{btn.disabled=false;btn.textContent=originalText}
+}
+
+async function sharePdfViaQr(){
+ const btn=$('qrShareBtn');
+ const originalText=btn.textContent;
+ btn.disabled=true;btn.textContent='Preparing shareable link…';
+ try{
+  if(!window.QRCode)throw new Error('QR library still loading — try again in a second');
+  const doc=await buildInventoryPdf();
+  const blob=doc.output('blob');
+  const path=`reports/${crypto.randomUUID()}.pdf`;
+  const {error:uploadErr}=await sb.storage.from('medicine-photos').upload(path,blob,{contentType:'application/pdf'});
+  if(uploadErr)throw new Error(uploadErr.message||'Could not upload PDF');
+  const {data}=sb.storage.from('medicine-photos').getPublicUrl(path);
+  const url=data.publicUrl;
+  const qrDataUrl=await QRCode.toDataURL(url,{width:240,margin:1,color:{dark:'#12463b',light:'#faf7f0'}});
+  $('qrImageWrap').innerHTML=`<img src="${qrDataUrl}" alt="QR code linking to your PDF report" width="240" height="240">`;
+  $('qrShareUrl').value=url;
+  $('qrShareDialog').showModal();
+ }catch(e){console.error(e);showToast(e.message||'Could not create shareable link')}
  finally{btn.disabled=false;btn.textContent=originalText}
 }
 
@@ -575,6 +607,11 @@ $('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smoo
 $('navProfile').addEventListener('click',()=>{$('profileDialog').showModal()});
 $('navCabinet').addEventListener('click',()=>{cabinetActiveCategory='';cabinetSearchQuery='';$('cabinetSearch').value='';renderCabinetList();$('cabinetDialog').showModal()});
 $('cabinetPdfBtn').addEventListener('click',generatePdfReport);
+$('qrShareBtn').addEventListener('click',sharePdfViaQr);
+$('qrCopyBtn').addEventListener('click',async()=>{
+ try{await navigator.clipboard.writeText($('qrShareUrl').value);showToast('Link copied')}
+ catch{$('qrShareUrl').select();document.execCommand('copy');showToast('Link copied')}
+});
 $('cabinetSearch').addEventListener('input',e=>{cabinetSearchQuery=e.target.value;renderCabinetList()});
 $('cabinetChips').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cabinetActiveCategory=b.dataset.cat;renderCabinetList()});
 $('breakdownCabinetLink').addEventListener('click',()=>{cabinetActiveCategory='';cabinetSearchQuery='';$('cabinetSearch').value='';renderCabinetList();$('cabinetDialog').showModal()});

@@ -302,3 +302,9 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .cabinet-search{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;font-size:.88rem;background:var(--surface);color:var(--ink);margin-bottom:12px;-webkit-appearance:none}
 .cabinet-search::placeholder{color:var(--muted)}
 .cabinet-search:focus{outline:none;border-color:var(--emerald)}
+
+.qr-share-card{text-align:center}
+.qr-image-wrap{display:flex;justify-content:center;margin:8px 0 16px}
+.qr-image-wrap img{border-radius:16px;border:1px solid var(--line);box-shadow:0 8px 20px rgba(18,70,59,.1)}
+.qr-warning{font-size:.78rem;color:var(--coral);margin-bottom:16px;text-align:left;background:var(--coral-soft);padding:10px 12px;border-radius:12px}
+#qrShareUrl{text-align:center;font-size:.78rem}
