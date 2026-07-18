@@ -272,3 +272,16 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .expiry-prompt-card .muted{margin-bottom:20px}
 .expiry-prompt-card .primary-button{margin-bottom:12px}
 .expiry-prompt-skip{display:block;margin:0 auto;font-size:.85rem}
+
+.shelf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;padding:0 16px 16px}
+.shelf-card{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;cursor:pointer;text-align:left;padding:0;transition:.15s transform,.15s box-shadow;box-shadow:0 4px 12px rgba(18,70,59,.06)}
+.shelf-card:active{transform:scale(.96)}
+.shelf-card-photo{width:100%;aspect-ratio:1/1;background:var(--mint-soft);display:grid;place-items:center;overflow:hidden}
+.shelf-card-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.shelf-card-fallback{font-family:Fraunces,serif;font-size:1.6rem;font-weight:600;color:var(--emerald)}
+.shelf-card-info{padding:10px 11px 12px;display:flex;flex-direction:column;gap:3px}
+.shelf-card-info strong{font-size:.82rem;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink)}
+.shelf-card-info small{color:var(--muted);font-size:.7rem}
+.shelf-status{align-self:flex-start;margin-top:3px;font-size:.62rem;padding:4px 8px}
+
+@media(min-width:700px){.shelf-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}

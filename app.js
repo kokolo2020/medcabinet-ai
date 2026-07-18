@@ -71,6 +71,13 @@ const CATEGORY_STYLES={
  Uncategorized:{icon:'❔',color:'var(--muted)',bg:'var(--paper-deep)'},
 };
 
+function shelfCardHtml(m){
+ const thumb=m.photo_url?`<img src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="shelf-card-fallback">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
+ const status=expiryStatus(m.expiry_date);
+ const statusClass=status==='Expired'?'amber-status':status==='Expires soon'?'soon-status':'green-status';
+ return `<button type="button" class="shelf-card" data-id="${esc(m.id)}"><div class="shelf-card-photo">${thumb}</div><div class="shelf-card-info"><strong>${esc(m.brand_name||'Unnamed')}</strong>${m.strength?`<small>${esc(m.strength)}</small>`:''}${status?`<span class="status ${statusClass} shelf-status">${esc(status)}</span>`:''}</div></button>`;
+}
+
 function renderCabinetList(){
  const favIds=favoriteMedicineIds();
  const allCats=[...new Set(currentItems.map(m=>m.category||'Uncategorized'))].sort((a,b)=>a.localeCompare(b));
@@ -87,7 +94,7 @@ function renderCabinetList(){
  $('cabinetList').innerHTML=catNames.length?catNames.map(cat=>{
   const items=groups[cat];
   const style=CATEGORY_STYLES[cat]||CATEGORY_STYLES.Other;
-  return `<details class="category-group" open style="border-left-color:${style.color}"><summary class="category-group-header"><span class="category-group-title"><span class="category-icon-chip" style="background:${style.bg};color:${style.color}">${style.icon}</span>${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="category-group-items">${items.map(m=>medicineRowHtml(m,favIds)).join('')}</div></details>`;
+  return `<details class="category-group" open style="border-left-color:${style.color}"><summary class="category-group-header"><span class="category-group-title"><span class="category-icon-chip" style="background:${style.bg};color:${style.color}">${style.icon}</span>${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="shelf-grid">${items.map(m=>shelfCardHtml(m)).join('')}</div></details>`;
  }).join(''):'<p class="empty-state">No medicines in this category.</p>';
 }
 
@@ -428,7 +435,7 @@ $('photoInputCamera').addEventListener('change',handlePhotoSelected);
 $('photoInputGallery').addEventListener('change',handlePhotoSelected);
 $('photoInputExpiry').addEventListener('change',handleExpiryPhotoSelected);
 $('scanExpiryBtn').addEventListener('click',()=>$('photoInputExpiry').click());
-$('expiryPromptTakeBtn').addEventListener('click',()=>{closeDialog('expiryPromptDialog');$('photoInputExpiry').click()});
+$('expiryPromptTakeBtn').addEventListener('click',()=>{$('photoInputExpiry').click();closeDialog('expiryPromptDialog')});
 $('expiryPromptSkipBtn').addEventListener('click',()=>{closeDialog('expiryPromptDialog');$('expiryDate').focus()});
 $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());
 $('uploadPhotoBtn').addEventListener('click',()=>$('photoInputGallery').click());
@@ -459,10 +466,7 @@ $('wasteBtn').addEventListener('click',()=>{$('wasteSearch').value='';renderWast
 $('wasteSearch').addEventListener('input',renderWasteList);
 $('favoritesList').addEventListener('click',e=>{const b=e.target.closest('[data-unfav-id]');if(b)removeFavorite(b.dataset.unfavId)});
 $('cabinetList').addEventListener('click',e=>{
- const del=e.target.closest('[data-delete-id]');if(del){deleteMedicine(del.dataset.deleteId);return}
- const edit=e.target.closest('[data-edit-id]');if(edit){editMedicine(edit.dataset.editId);return}
- const fav=e.target.closest('[data-fav-toggle]');if(fav){toggleFavorite(fav.dataset.favToggle);return}
- const row=e.target.closest('.medicine-row');if(row)openDetail(row.dataset.id);
+ const card=e.target.closest('.shelf-card');if(card)openDetail(card.dataset.id);
 });
 $('shareReportBtn').addEventListener('click',()=>$('reportDialog').showModal());
 $('detailEditBtn').addEventListener('click',()=>{const id=$('detailDialog').dataset.id;closeDialog('detailDialog');editMedicine(id)});
