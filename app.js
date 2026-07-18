@@ -151,7 +151,16 @@ async function generatePdfReport(){
     doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(20,30,28);
     doc.text(truncateText(`${m.brand_name||'Unnamed'}${m.strength?' '+m.strength:''}`,30),colX.name,textY);
     doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(60,70,66);
-    doc.text(m.expiry_date||'—',colX.expiry,textY);
+    const status=expiryStatus(m.expiry_date);
+    if(m.expiry_date){
+     if(status==='Expired'){doc.setFont('helvetica','bold');doc.setTextColor(200,90,69)}
+     else if(status==='Expires soon'){doc.setFont('helvetica','bold');doc.setTextColor(232,98,10)}
+     else{doc.setTextColor(29,104,196)}
+     doc.text(m.expiry_date,colX.expiry,textY);
+     doc.setFont('helvetica','normal');doc.setTextColor(60,70,66);
+    }else{
+     doc.text('—',colX.expiry,textY);
+    }
     doc.text(truncateText(parseLocation(m.notes)||'—',24),colX.location,textY);
     doc.text((m.updated_at||m.created_at||'').slice(0,10)||'—',colX.updated,textY);
     y+=rowH;
