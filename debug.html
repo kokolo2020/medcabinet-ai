@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Waste Photo Diagnostic</title>
+<style>
+  body{font-family:-apple-system,system-ui,sans-serif;background:#faf7f0;color:#12463b;padding:16px;margin:0}
+  h1{font-size:1.1rem}
+  table{width:100%;border-collapse:collapse;font-size:.8rem;background:#fff;border-radius:8px;overflow:hidden}
+  th,td{padding:8px;text-align:left;border-bottom:1px solid #e7e4dc;word-break:break-all}
+  th{background:#e7f4ee;color:#12463b}
+  .yes{color:#1f6f5c;font-weight:700}
+  .no{color:#c85a45;font-weight:700}
+  .loading,.err{padding:20px;text-align:center;color:#888}
+</style>
+</head>
+<body>
+<h1>Waste list — raw photo_url check</h1>
+<div id="out" class="loading">Loading…</div>
+<script src="config.js"></script>
+<script>
+fetch(`${window.MEDCABINET_CONFIG.supabaseUrl}/rest/v1/deleted_medicines?select=brand_name,photo_url,deleted_at&order=deleted_at.desc&limit=15`,{
+  headers:{apikey:window.MEDCABINET_CONFIG.supabaseKey,Authorization:`Bearer ${window.MEDCABINET_CONFIG.supabaseKey}`}
+})
+.then(r=>r.json())
+.then(rows=>{
+  if(!Array.isArray(rows)){document.getElementById('out').innerHTML='<p class="err">Error: '+JSON.stringify(rows)+'</p>';return}
+  if(!rows.length){document.getElementById('out').innerHTML='<p class="err">No rows returned.</p>';return}
+  let html='<table><tr><th>Name</th><th>photo_url</th><th>Deleted</th></tr>';
+  rows.forEach(r=>{
+    const has=!!r.photo_url;
+    html+=`<tr><td>${r.brand_name||''}</td><td class="${has?'yes':'no'}">${has?r.photo_url:'— NULL —'}</td><td>${(r.deleted_at||'').slice(0,10)}</td></tr>`;
+  });
+  html+='</table>';
+  document.getElementById('out').innerHTML=html;
+})
+.catch(e=>{document.getElementById('out').innerHTML='<p class="err">Fetch failed: '+e.message+'</p>'});
+</script>
+</body>
+</html>
