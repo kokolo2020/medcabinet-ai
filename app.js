@@ -1,6 +1,6 @@
 const symbols={THB:'฿',USD:'$',EUR:'€',GBP:'£',SGD:'S$',KHR:'៛',JPY:'¥'};
 const cfg=window.MEDCABINET_CONFIG;
-const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true}});
 
 let pendingLoginEmail='';
 
