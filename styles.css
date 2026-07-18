@@ -308,3 +308,13 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .qr-image-wrap img{border-radius:16px;border:1px solid var(--line);box-shadow:0 8px 20px rgba(18,70,59,.1)}
 .qr-warning{font-size:.78rem;color:var(--coral);margin-bottom:16px;text-align:left;background:var(--coral-soft);padding:10px 12px;border-radius:12px}
 #qrShareUrl{text-align:center;font-size:.78rem}
+
+.login-screen{position:fixed;inset:0;z-index:60;background:radial-gradient(120% 70% at 20% -10%,#eef7f1 0%,var(--paper) 45%,var(--paper) 100%);display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{width:100%;max-width:360px;text-align:center;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 20px rgba(18,70,59,.07)}
+.login-icon{margin:0 auto 20px}
+.login-card .splash-title{font-size:1.5rem;margin-bottom:8px}
+.login-card .muted{margin-bottom:22px;font-size:.85rem}
+.login-card label{text-align:left;margin-bottom:14px}
+#loginCode{text-align:center;letter-spacing:.4em;font-size:1.2rem}
+.profile-account-line{margin-top:14px;font-size:.75rem;text-align:center}
+#signOutBtn{display:block;margin:4px auto 0;font-size:.82rem}

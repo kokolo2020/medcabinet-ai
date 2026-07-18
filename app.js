@@ -1,6 +1,49 @@
 const symbols={THB:'฿',USD:'$',EUR:'€',GBP:'£',SGD:'S$',KHR:'៛',JPY:'¥'};
 const cfg=window.MEDCABINET_CONFIG;
 const sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey);
+
+let pendingLoginEmail='';
+
+function showLoginScreen(){$('loginScreen').hidden=false}
+function hideLoginScreen(){$('loginScreen').hidden=true}
+
+async function sendOtp(){
+ const email=$('loginEmail').value.trim();
+ if(!email){showToast('Enter your email first');return}
+ const btn=$('sendOtpBtn');const original=btn.textContent;
+ btn.disabled=true;btn.textContent='Sending…';
+ try{
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
+  if(error)throw new Error(error.message);
+  pendingLoginEmail=email;
+  $('loginSubtitle').textContent=`We sent a 6-digit code to ${email}`;
+  $('loginStepEmail').hidden=true;
+  $('loginStepCode').hidden=false;
+  $('loginCode').focus();
+ }catch(e){console.error(e);showToast(e.message||'Could not send code')}
+ finally{btn.disabled=false;btn.textContent=original}
+}
+
+async function verifyOtp(){
+ const token=$('loginCode').value.trim();
+ if(token.length!==6){showToast('Enter the 6-digit code');return}
+ const btn=$('verifyOtpBtn');const original=btn.textContent;
+ btn.disabled=true;btn.textContent='Verifying…';
+ try{
+  const {error}=await sb.auth.verifyOtp({email:pendingLoginEmail,token,type:'email'});
+  if(error)throw new Error(error.message);
+  hideLoginScreen();
+  await initApp();
+ }catch(e){console.error(e);showToast(e.message||'Invalid or expired code')}
+ finally{btn.disabled=false;btn.textContent=original}
+}
+
+async function initApp(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session){showLoginScreen();return}
+ $('profileAccountLine').textContent=`Signed in as ${session.user.email}`;
+ await loadMedicines();
+}
 const $=id=>document.getElementById(id);
 const toast=document.createElement('div');toast.className='toast';document.body.appendChild(toast);
 function showToast(message){toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2500)}
@@ -685,4 +728,13 @@ $('detailEditBtn').addEventListener('click',()=>{const id=$('detailDialog').data
 $('detailFavBtn').addEventListener('click',async()=>{const id=$('detailDialog').dataset.id;await toggleFavorite(id);const isFav=favoriteMedicineIds().has(id);$('detailFavBtn').textContent=isFav?'★ Favorited':'☆ Favorite'});
 $('detailDeleteBtn').addEventListener('click',async()=>{const id=$('detailDialog').dataset.id;await deleteMedicine(id);closeDialog('detailDialog')});
 $('nativeShareBtn').addEventListener('click',async()=>{const text=`My MedCabinet AI score is ${$('scoreValue').textContent}/100.`;try{if(navigator.share)await navigator.share({title:'My MedCabinet AI Report',text});else{await navigator.clipboard.writeText(text);showToast('Report copied')}}catch(e){if(e.name!=='AbortError')showToast('Sharing unavailable')}});
-loadMedicines();
+$('sendOtpBtn').addEventListener('click',sendOtp);
+$('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')sendOtp()});
+$('verifyOtpBtn').addEventListener('click',verifyOtp);
+$('loginCode').addEventListener('keydown',e=>{if(e.key==='Enter')verifyOtp()});
+$('resendOtpBtn').addEventListener('click',async()=>{$('loginEmail').value=pendingLoginEmail;await sendOtp()});
+$('changeEmailBtn').addEventListener('click',()=>{$('loginStepCode').hidden=true;$('loginStepEmail').hidden=false;$('loginCode').value='';$('loginSubtitle').textContent="Enter your email — we'll send a 6-digit code, no password needed."});
+$('signOutBtn').addEventListener('click',async()=>{await sb.auth.signOut();location.reload()});
+sb.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){showLoginScreen()}});
+
+initApp();

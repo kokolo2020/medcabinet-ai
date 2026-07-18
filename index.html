@@ -42,6 +42,29 @@
     },3000);
   </script>
 
+  <div id="loginScreen" class="login-screen" hidden>
+    <div class="login-card dialog-card">
+      <div class="splash-icon-wrap login-icon">
+        <div class="splash-bottles"><span class="sb sb-1"></span><span class="sb sb-2"></span><span class="sb sb-3"></span></div>
+        <div class="splash-cabinet"><span class="splash-cross"></span></div>
+      </div>
+      <h1 class="splash-title">MedCabinet <span>AI</span></h1>
+      <p class="muted" id="loginSubtitle">Enter your email — we'll send a 6-digit code, no password needed.</p>
+
+      <div id="loginStepEmail">
+        <label>Email<input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email"></label>
+        <button type="button" class="primary-button" id="sendOtpBtn">Send 6-digit code</button>
+      </div>
+
+      <div id="loginStepCode" hidden>
+        <label>6-digit code<input type="text" id="loginCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code"></label>
+        <button type="button" class="primary-button" id="verifyOtpBtn">Verify & sign in</button>
+        <button type="button" class="text-button" id="resendOtpBtn">Resend code</button>
+        <button type="button" class="text-button" id="changeEmailBtn">Use a different email</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-shell">
     <header class="topbar">
       <div><p class="eyebrow">Good morning</p><h1>My MedCabinet</h1></div>
@@ -130,6 +153,8 @@
       <button class="secondary-button" id="shareReportBtn">Share report</button>
       <button class="secondary-button" id="cabinetPdfBtn">📄 Download PDF inventory</button>
       <button class="secondary-button" id="qrShareBtn">📱 Share PDF via QR code</button>
+      <p class="muted profile-account-line" id="profileAccountLine"></p>
+      <button class="text-button" id="signOutBtn">Sign out</button>
     </div>
   </dialog>
 

@@ -130,3 +130,70 @@ alter table public.deleted_medicines add column if not exists photo_url text;
 alter table public.deleted_medicines add column if not exists notes text;
 
 notify pgrst, 'reload schema';
+
+-- ============================================================
+-- AUTH MIGRATION: per-user accounts via email OTP (6-digit code)
+-- Run this whole block once. It's safe to run even with existing
+-- data — old rows just become invisible (owned by nobody) until
+-- claimed by the real owner in the follow-up step below.
+-- ============================================================
+
+alter table public.medicines add column if not exists user_id uuid references auth.users(id) on delete cascade;
+alter table public.favorites add column if not exists user_id uuid references auth.users(id) on delete cascade;
+alter table public.deleted_medicines add column if not exists user_id uuid references auth.users(id) on delete cascade;
+
+alter table public.medicines alter column user_id set default auth.uid();
+alter table public.favorites alter column user_id set default auth.uid();
+alter table public.deleted_medicines alter column user_id set default auth.uid();
+
+create index if not exists medicines_user_idx on public.medicines(user_id);
+create index if not exists favorites_user_idx on public.favorites(user_id);
+create index if not exists deleted_medicines_user_idx on public.deleted_medicines(user_id);
+
+-- Replace the wide-open policies with owner-scoped ones.
+drop policy if exists "public read" on public.medicines;
+drop policy if exists "public insert" on public.medicines;
+drop policy if exists "public update" on public.medicines;
+drop policy if exists "public delete" on public.medicines;
+
+create policy "owner read" on public.medicines for select using (auth.uid() = user_id);
+create policy "owner insert" on public.medicines for insert with check (auth.uid() = user_id);
+create policy "owner update" on public.medicines for update using (auth.uid() = user_id);
+create policy "owner delete" on public.medicines for delete using (auth.uid() = user_id);
+
+drop policy if exists "public read" on public.favorites;
+drop policy if exists "public insert" on public.favorites;
+drop policy if exists "public delete" on public.favorites;
+
+create policy "owner read" on public.favorites for select using (auth.uid() = user_id);
+create policy "owner insert" on public.favorites for insert with check (auth.uid() = user_id);
+create policy "owner delete" on public.favorites for delete using (auth.uid() = user_id);
+
+drop policy if exists "public read" on public.deleted_medicines;
+drop policy if exists "public insert" on public.deleted_medicines;
+
+create policy "owner read" on public.deleted_medicines for select using (auth.uid() = user_id);
+create policy "owner insert" on public.deleted_medicines for insert with check (auth.uid() = user_id);
+
+-- Photos: only signed-in users may upload; reads stay public so
+-- shared PDF/QR report links keep working for anyone with the link.
+drop policy if exists "public photo upload" on storage.objects;
+create policy "authenticated photo upload" on storage.objects
+  for insert with check (bucket_id = 'medicine-photos' and auth.role() = 'authenticated');
+
+notify pgrst, 'reload schema';
+
+-- ============================================================
+-- RUN THIS SECOND BLOCK ONLY AFTER you've signed in once via the
+-- app's new login screen with sotivear2015@gmail.com — it claims
+-- all the existing un-owned rows for that account.
+-- ============================================================
+
+update public.medicines set user_id=(select id from auth.users where email='sotivear2015@gmail.com') where user_id is null;
+update public.favorites set user_id=(select id from auth.users where email='sotivear2015@gmail.com') where user_id is null;
+update public.deleted_medicines set user_id=(select id from auth.users where email='sotivear2015@gmail.com') where user_id is null;
+
+-- Optional, once you've confirmed everything above claimed correctly:
+-- alter table public.medicines alter column user_id set not null;
+-- alter table public.favorites alter column user_id set not null;
+-- alter table public.deleted_medicines alter column user_id set not null;
