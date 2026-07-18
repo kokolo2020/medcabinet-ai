@@ -3,43 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#12463b">
+  <meta name="theme-color" content="#086ae8">
   <title>MedCabinet AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="welcome-screen.css">
 </head>
 <body>
-  <div id="splashScreen" class="splash-screen">
-    <div class="splash-icon-wrap">
-      <div class="splash-bottles">
-        <span class="sb sb-1"></span>
-        <span class="sb sb-2"></span>
-        <span class="sb sb-3"></span>
+  <section id="mcWelcome" aria-label="Welcome to MedCabinet AI">
+    <div class="mcw-inner">
+      <div class="mcw-cabinet" aria-hidden="true"><span class="mcw-cross"></span></div>
+      <h1 class="mcw-title">MedCabinet <span>AI</span></h1>
+      <p class="mcw-sub">Your smart digital medicine cabinet</p>
+      <ul class="mcw-benefits">
+        <li><b>📦</b>Know what you have</li>
+        <li><b>📅</b>Never miss expiry</li>
+        <li><b>🔁</b>Avoid duplicates</li>
+        <li><b>💰</b>Save money</li>
+        <li><b>❤️</b>Stay healthy</li>
+      </ul>
+      <div class="mcw-scene" aria-hidden="true">
+        <span class="mcw-pills">💊</span>
+        <span class="mcw-bottle"></span>
+        <span class="mcw-plant">🌿</span>
       </div>
-      <div class="splash-cabinet"><span class="splash-cross"></span></div>
+      <button type="button" class="mcw-start" id="mcWelcomeStart">Get Started</button>
     </div>
-    <h1 class="splash-title">MedCabinet <span>AI</span></h1>
-    <p class="splash-tagline">Your smart digital medicine cabinet</p>
-    <ul class="splash-benefits">
-      <li><span class="splash-benefit-icon">📦</span>Know what you have</li>
-      <li><span class="splash-benefit-icon">📅</span>Never miss expiry</li>
-      <li><span class="splash-benefit-icon">🔁</span>Avoid duplicates</li>
-      <li><span class="splash-benefit-icon">💰</span>Save money</li>
-      <li><span class="splash-benefit-icon">❤️</span>Stay healthy</li>
-    </ul>
-    <div class="splash-decor">
-      <div class="decor-bottle"></div>
-      <div class="decor-blister"><span></span><span></span><span></span><span></span></div>
-      <div class="decor-plant">🌿</div>
-    </div>
-  </div>
+  </section>
   <script>
-    setTimeout(function(){
-      var s=document.getElementById('splashScreen');
-      if(s){s.classList.add('hide');setTimeout(function(){s.remove()},500);}
-    },3000);
+    document.addEventListener('DOMContentLoaded',function(){
+      var welcome=document.getElementById('mcWelcome');
+      var start=document.getElementById('mcWelcomeStart');
+      if(start&&welcome){start.addEventListener('click',function(){welcome.classList.add('mcw-hide');setTimeout(function(){welcome.remove();},380);});}
+    });
   </script>
 
   <div class="app-shell">
