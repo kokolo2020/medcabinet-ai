@@ -298,3 +298,7 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .chart-track{flex:1;height:10px;background:var(--paper-deep);border-radius:6px;overflow:hidden}
 .chart-bar{display:block;height:100%;border-radius:6px;transition:width .4s ease}
 .chart-count{width:22px;text-align:right;font-weight:700;font-size:.85rem;color:var(--ink);flex-shrink:0}
+
+.cabinet-search{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;font-size:.88rem;background:var(--surface);color:var(--ink);margin-bottom:12px;-webkit-appearance:none}
+.cabinet-search::placeholder{color:var(--muted)}
+.cabinet-search:focus{outline:none;border-color:var(--emerald)}

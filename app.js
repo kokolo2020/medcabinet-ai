@@ -73,6 +73,27 @@ const CATEGORY_STYLES={
  Uncategorized:{icon:'❔',color:'var(--muted)',bg:'var(--paper-deep)'},
 };
 
+const CATEGORY_KEYWORDS={
+ 'Pain relief':['pain','headache','fever','ache','migraine'],
+ 'Cold & flu':['cough','cold','flu','congestion','sore throat','sneeze','runny nose'],
+ 'Allergy':['allergy','allergic','antihistamine','itch','rash','hay fever'],
+ 'Antibiotic':['antibiotic','infection'],
+ 'Anti-seizure':['seizure','epilepsy'],
+ 'Digestive':['stomach','digestive','diarrhea','nausea','indigestion','constipation','vomit'],
+ 'Vitamins & supplements':['vitamin','supplement','mineral'],
+ 'First aid':['first aid','wound','bandage','cut','antiseptic'],
+};
+
+function medicineMatchesQuery(m,q){
+ if(!q)return true;
+ const haystack=[m.brand_name,m.manufacturer,m.category,m.strength,m.barcode,parseLocation(m.notes)].filter(Boolean).join(' ').toLowerCase();
+ if(haystack.includes(q))return true;
+ const keywords=CATEGORY_KEYWORDS[m.category||'']||[];
+ return keywords.some(k=>k.includes(q)||q.includes(k));
+}
+
+let cabinetSearchQuery='';
+
 function shelfCardHtml(m){
  const thumb=m.photo_url?`<img src="${esc(m.photo_url)}" alt="${esc(m.brand_name||'')}">`:`<div class="shelf-card-fallback">${esc((m.brand_name||'?')[0].toUpperCase())}</div>`;
  const status=expiryStatus(m.expiry_date);
@@ -177,12 +198,14 @@ async function generatePdfReport(){
 
 function renderCabinetList(){
  const favIds=favoriteMedicineIds();
+ const q=cabinetSearchQuery.trim().toLowerCase();
+ const searchedItems=currentItems.filter(m=>medicineMatchesQuery(m,q));
  const allCats=[...new Set(currentItems.map(m=>m.category||'Uncategorized'))].sort((a,b)=>a.localeCompare(b));
- $('cabinetChips').innerHTML=[`<button type="button" class="chip ${!cabinetActiveCategory?'active':''}" data-cat="">All<span>${currentItems.length}</span></button>`]
-  .concat(allCats.map(c=>{const style=CATEGORY_STYLES[c]||CATEGORY_STYLES.Other;return `<button type="button" class="chip ${cabinetActiveCategory===c?'active':''}" data-cat="${esc(c)}"><i class="chip-dot" style="background:${style.color}"></i>${esc(c)}<span>${currentItems.filter(m=>(m.category||'Uncategorized')===c).length}</span></button>`}))
+ $('cabinetChips').innerHTML=[`<button type="button" class="chip ${!cabinetActiveCategory?'active':''}" data-cat="">All<span>${searchedItems.length}</span></button>`]
+  .concat(allCats.map(c=>{const style=CATEGORY_STYLES[c]||CATEGORY_STYLES.Other;return `<button type="button" class="chip ${cabinetActiveCategory===c?'active':''}" data-cat="${esc(c)}"><i class="chip-dot" style="background:${style.color}"></i>${esc(c)}<span>${searchedItems.filter(m=>(m.category||'Uncategorized')===c).length}</span></button>`}))
   .join('');
  const groups={};
- currentItems.forEach(m=>{
+ searchedItems.forEach(m=>{
   const cat=m.category||'Uncategorized';
   if(cabinetActiveCategory&&cat!==cabinetActiveCategory)return;
   (groups[cat]=groups[cat]||[]).push(m);
@@ -192,7 +215,7 @@ function renderCabinetList(){
   const items=groups[cat];
   const style=CATEGORY_STYLES[cat]||CATEGORY_STYLES.Other;
   return `<details class="category-group" open style="border-left-color:${style.color}"><summary class="category-group-header"><span class="category-group-title"><span class="category-icon-chip" style="background:${style.bg};color:${style.color}">${style.icon}</span>${esc(cat)}</span><span class="category-group-count">${items.length}</span></summary><div class="shelf-grid">${items.map(m=>shelfCardHtml(m)).join('')}</div></details>`;
- }).join(''):'<p class="empty-state">No medicines in this category.</p>';
+ }).join(''):`<p class="empty-state">${q?'No matches for that search.':'No medicines in this category.'}</p>`;
 }
 
 function renderExpiredList(){
@@ -550,10 +573,11 @@ $('currencyBtn').addEventListener('click',()=>$('currencyDialog').showModal());
 $('saveCurrencyBtn').addEventListener('click',()=>{applyCurrency($('currencySelect').value);showToast('Currency updated');loadMedicines()});
 $('navHome').addEventListener('click',()=>{window.scrollTo({top:0,behavior:'smooth'})});
 $('navProfile').addEventListener('click',()=>{$('profileDialog').showModal()});
-$('navCabinet').addEventListener('click',()=>{cabinetActiveCategory='';renderCabinetList();$('cabinetDialog').showModal()});
+$('navCabinet').addEventListener('click',()=>{cabinetActiveCategory='';cabinetSearchQuery='';$('cabinetSearch').value='';renderCabinetList();$('cabinetDialog').showModal()});
 $('cabinetPdfBtn').addEventListener('click',generatePdfReport);
+$('cabinetSearch').addEventListener('input',e=>{cabinetSearchQuery=e.target.value;renderCabinetList()});
 $('cabinetChips').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;cabinetActiveCategory=b.dataset.cat;renderCabinetList()});
-$('breakdownCabinetLink').addEventListener('click',()=>{cabinetActiveCategory='';renderCabinetList();$('cabinetDialog').showModal()});
+$('breakdownCabinetLink').addEventListener('click',()=>{cabinetActiveCategory='';cabinetSearchQuery='';$('cabinetSearch').value='';renderCabinetList();$('cabinetDialog').showModal()});
 $('mainScanBtn').addEventListener('click',()=>$('scanDialog').showModal());
 document.querySelector('[data-action="add"]').addEventListener('click',()=>{resetEditState();$('medicineForm').reset();resetPhotoPreview();toggleDosageFields();openAdd()});
 document.querySelector('[data-scan-action="add"]').addEventListener('click',()=>$('photoInputCamera').click());
