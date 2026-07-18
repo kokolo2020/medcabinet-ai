@@ -328,6 +328,37 @@ function openDetail(id){
  $('detailDialog').showModal();
 }
 
+function matchKey(brand,strength){return `${(brand||'').trim().toLowerCase()}|${(strength||'').trim().toLowerCase()}`}
+
+function findExistingMatch(data){
+ if(data.barcode){
+  const byBarcode=currentItems.find(m=>m.barcode&&m.barcode.trim()&&m.barcode.trim()===String(data.barcode).trim());
+  if(byBarcode)return byBarcode;
+ }
+ if(data.brand_name){
+  const key=matchKey(data.brand_name,data.strength);
+  return currentItems.find(m=>matchKey(m.brand_name,m.strength)===key)||null;
+ }
+ return null;
+}
+
+let pendingMatch=null;
+
+function openMatchFoundDialog(matched,data,dataUrl,file){
+ pendingMatch={matched,data,dataUrl,file};
+ $('matchFoundName').textContent=[matched.brand_name,matched.strength].filter(Boolean).join(' ');
+ $('matchFoundPhoto').innerHTML=matched.photo_url?`<img src="${esc(matched.photo_url)}" alt="">`:`<div class="medicine-thumb">${esc((matched.brand_name||'?')[0].toUpperCase())}</div>`;
+ $('matchFoundDialog').showModal();
+}
+
+function proceedAsNewMedicine(data,dataUrl){
+ openAdd();
+ fillFormFromScan(data);
+ showPhotoPreview(dataUrl);
+ showToast(data.expiry_date?'Scanned — check the details and save':'Scanned — no expiry date found');
+ if(!data.expiry_date)$('expiryPromptDialog').showModal();
+}
+
 function resetEditState(){editingId=null;editingPhotoUrl=null;editingOriginalPrice=null;editingPriceEstimated=false;$('dialogEyebrow').textContent='New inventory item';$('dialogTitle').textContent='Add medicine';$('saveMedicineBtn').textContent='Save medicine'}
 
 function editMedicine(id){
@@ -389,11 +420,12 @@ async function handlePhotoSelected(e){
   const r=await fetch('/.netlify/functions/scan-medicine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:base64,mediaType:file.type||'image/jpeg'})});
   const data=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(data.error||`Scan failed (${r.status})`);
-  openAdd();
-  fillFormFromScan(data);
-  showPhotoPreview(dataUrl);
-  showToast(data.expiry_date?'Scanned — check the details and save':'Scanned — no expiry date found');
-  if(!data.expiry_date)$('expiryPromptDialog').showModal();
+  const matched=findExistingMatch(data);
+  if(matched){
+   openMatchFoundDialog(matched,data,dataUrl,file);
+  }else{
+   proceedAsNewMedicine(data,dataUrl);
+  }
  }catch(err){
   console.error(err);
   pendingPhotoFile=file;
@@ -531,6 +563,33 @@ $('photoInputCamera').addEventListener('change',handlePhotoSelected);
 $('photoInputGallery').addEventListener('change',handlePhotoSelected);
 $('photoInputExpiry').addEventListener('change',handleExpiryPhotoSelected);
 $('scanExpiryBtn').addEventListener('click',()=>$('photoInputExpiry').click());
+$('matchUpdatePhotoBtn').addEventListener('click',async()=>{
+ const {matched,file}=pendingMatch;
+ closeDialog('matchFoundDialog');
+ showToast('Updating photo…');
+ try{
+  const url=await uploadPhoto(file);
+  const {error}=await sb.from('medicines').update({photo_url:url,updated_at:new Date().toISOString()}).eq('id',matched.id);
+  if(error)throw new Error(error.message||'Could not update photo');
+  showToast('Photo updated');
+  await loadMedicines();
+ }catch(e){console.error(e);showToast(e.message)}
+});
+$('matchUpdateInfoBtn').addEventListener('click',()=>{
+ const {matched,data,dataUrl,file}=pendingMatch;
+ closeDialog('matchFoundDialog');
+ editMedicine(matched.id);
+ if(data.expiry_date)$('expiryDate').value=data.expiry_date;
+ if(data.manufacturer)$('manufacturer').value=data.manufacturer;
+ if(data.barcode)$('barcode').value=data.barcode;
+ pendingPhotoFile=file;
+ showPhotoPreview(dataUrl);
+});
+$('matchAddNewBtn').addEventListener('click',()=>{
+ const {data,dataUrl}=pendingMatch;
+ closeDialog('matchFoundDialog');
+ proceedAsNewMedicine(data,dataUrl);
+});
 $('expiryPromptTakeBtn').addEventListener('click',()=>{$('photoInputExpiry').click();closeDialog('expiryPromptDialog')});
 $('expiryPromptSkipBtn').addEventListener('click',()=>{closeDialog('expiryPromptDialog');$('expiryDate').focus()});
 $('takePhotoBtn').addEventListener('click',()=>$('photoInputCamera').click());

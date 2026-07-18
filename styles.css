@@ -272,6 +272,10 @@ dialog::backdrop{background:rgba(18,42,36,.45);backdrop-filter:blur(6px)}
 .expiry-prompt-card .muted{margin-bottom:20px}
 .expiry-prompt-card .primary-button{margin-bottom:12px}
 .expiry-prompt-skip{display:block;margin:0 auto;font-size:.85rem}
+.match-found-photo{width:64px;height:64px;border-radius:20px;overflow:hidden;margin:0 auto 16px;background:var(--mint-soft);display:grid;place-items:center}
+.match-found-photo img{width:100%;height:100%;object-fit:cover}
+.match-found-photo .medicine-thumb{width:100%;height:100%;border-radius:0}
+.expiry-prompt-card .secondary-button{margin-bottom:10px}
 
 .shelf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;padding:0 16px 16px}
 .shelf-card{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;cursor:pointer;text-align:left;padding:0;transition:.15s transform,.15s box-shadow;box-shadow:0 4px 12px rgba(18,70,59,.06)}
